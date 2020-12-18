@@ -1,4 +1,4 @@
-package format
+package report
 
 import (
 	"encoding/xml"

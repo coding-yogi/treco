@@ -1,10 +1,10 @@
-package format
+package report
 
 import (
 	"io"
 	"treco/model"
 )
 
-type Parser interface {
+type ReportParser interface {
 	Parse(r io.Reader, result *model.Result) error
 }
