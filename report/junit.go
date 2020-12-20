@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"io"
 	"io/ioutil"
+	"log"
 	"strings"
 	"treco/model"
 )
@@ -15,11 +16,13 @@ const (
 	SKIPPED = "skipped"
 )
 
+// JunitReport
 type JunitReport struct {
 	XMLName    xml.Name         `xml:"testsuites"`
 	TestSuites []JunitTestSuite `xml:"testsuite"`
 }
 
+// JunitTestSuite
 type JunitTestSuite struct {
 	XMLName        xml.Name        `xml:"testsuite"`
 	Tests          int             `xml:"tests,attr"`
@@ -29,21 +32,27 @@ type JunitTestSuite struct {
 	JunitTestCases []JunitTestCase `xml:"testcase"`
 }
 
+// JunitTestCase
 type JunitTestCase struct {
 	XMLName xml.Name `xml:"testcase"`
 	Name    string   `xml:"name,attr"`
 	Time    float64  `xml:"time,attr"`
 	Failure Failure  `xml:"failure,omitempty"`
+	Skipped Skipped  `xml:"skipped,omitempty"`
 }
 
+// Failure
 type Failure struct {
 	Message string `xml:"message,attr"`
 }
 
-type JunitXmlParser struct{}
+// Skipped
+type Skipped struct {}
 
-func (JunitXmlParser) Parse(r io.Reader, result *model.Result) error {
+type junitXmlParser struct{}
 
+func (junitXmlParser) parse(r io.Reader, result *model.Result) error {
+	log.Println("reading report file")
 	b, err := ioutil.ReadAll(r)
 	if err != nil {
 		fmt.Println("error reading: " + err.Error())
@@ -52,17 +61,14 @@ func (JunitXmlParser) Parse(r io.Reader, result *model.Result) error {
 
 	jur := &JunitReport{}
 
+	log.Println("unmarshalling to junit report")
 	if strings.Contains(string(b), "testsuites") {
-		err = xml.Unmarshal(b, jur)
-		if err != nil {
-			fmt.Println("error unmarshalling junit report: " + err.Error())
+		if err = xml.Unmarshal(b, jur); err != nil {
 			return err
 		}
 	} else {
 		suite := &JunitTestSuite{}
-		err = xml.Unmarshal(b, suite)
-		if err != nil {
-			fmt.Println("error unmarshalling junit report: " + err.Error())
+		if err = xml.Unmarshal(b, suite); err != nil {
 			return err
 		}
 
@@ -74,18 +80,21 @@ func (JunitXmlParser) Parse(r io.Reader, result *model.Result) error {
 		result.TotalFailed = +s.Failures
 		result.TotalSkipped = +s.Skipped
 		result.TotalPassed = +(s.Tests - (s.Failures + s.Skipped))
+		result.TimeTaken = +s.Time
 
 		for _, u := range s.JunitTestCases {
 			name := u.Name
 			status := PASSED
 			if strings.ToLower(u.Failure.Message) != "" {
 				status = FAILED
+			} else if u.Time == 0.0 {
+				status = SKIPPED
 			}
+
 			time := u.Time
-			result.Scenarios = append(result.Scenarios, model.Scenario{Name: name, Status: status, Time: time})
+			result.Scenarios = append(result.Scenarios, &model.Scenario{Build: result.Build, Name: name, Status: status, TimeTaken: time})
 		}
 	}
 
-	fmt.Println(result)
 	return nil
 }
