@@ -50,5 +50,5 @@ func validateFlags(cfg config) error {
 			"export %s=\n", ReportFile, ReportFormat, Service, TestType, BuildID)
 	}
 
-	return validateParams(cfg)
+	return validateParams(cfg.testType, cfg.reportFormat)
 }

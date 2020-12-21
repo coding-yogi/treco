@@ -9,58 +9,33 @@ import (
 	"strings"
 )
 
+type Error struct {
+	Code        int
+	Description string
+}
+
+var port int
 var requiredParams= []string{ReportFormat, TestType, BuildID, Service}
 
 var serveCmd = &cobra.Command{
 	Use:   "serve",
 	Short: "Runs as a web server",
 	Run: func(cmd *cobra.Command, args []string) {
-		http.HandleFunc("/treco/v1/publish", publishHandler)
-		log.Fatal(http.ListenAndServe(":8080", nil))
+		http.HandleFunc("/treco/v1/publish/report", publishHandler)
+		log.Printf("Starting server on port %v\n", port)
+		log.Fatal(http.ListenAndServe(fmt.Sprintf(":%v", port), nil))
 	},
 }
 
-type Error struct {
-	Code        int
-	Description string
+func init() {
+	flags := serveCmd.Flags()
+	flags.IntVarP(&port, "port", "p", 8080, "port for server to run")
 }
 
 func publishHandler(w http.ResponseWriter, r *http.Request) {
-	// Validate Method
-	if r.Method != "POST" {
-		http.Error(w, "", http.StatusMethodNotAllowed)
-		return
-	}
-
-	// Validate Headers
-	if err := validateHeaders(r.Header); err != nil {
-		sendErrorResponse(w, err.Error(), http.StatusBadRequest)
-		return
-	}
-
-	// Parse parameters
-	if err := r.ParseMultipartForm(1000000); err != nil {
-		sendErrorResponse(w, "unable to parse form data", http.StatusBadRequest)
-		return
-	}
-
-	// Validate parameters
-	if err := validateFormParameters(r); err != nil {
-		sendErrorResponse(w, err.Error(), http.StatusBadRequest)
-		return
-	}
-
-	cfg = config{
-		reportFile: "",
-		reportFormat: r.FormValue(strings.ToLower(ReportFormat)),
-		testType: r.FormValue(strings.ToLower(TestType)),
-		build: r.FormValue(strings.ToLower(BuildID)),
-		service: r.FormValue(strings.ToLower(Service)),
-	}
-
-	// Validate param values
-	if err:= validateParams(cfg); err != nil {
-		sendErrorResponse(w, err.Error(), http.StatusBadRequest)
+	// Validate request
+	if status, err := validatePublishRequest(r); err != nil {
+		sendErrorResponse(w, err.Error(), status)
 		return
 	}
 
@@ -72,6 +47,14 @@ func publishHandler(w http.ResponseWriter, r *http.Request) {
 	}
 
 	defer reportFile.Close()
+
+	cfg = config{
+		reportFile: "",
+		reportFormat: r.FormValue(strings.ToLower(ReportFormat)),
+		testType: r.FormValue(strings.ToLower(TestType)),
+		build: r.FormValue(strings.ToLower(BuildID)),
+		service: r.FormValue(strings.ToLower(Service)),
+	}
 
 	// Process file
 	if err := process(cfg, reportFile); err != nil {
@@ -85,28 +68,19 @@ func publishHandler(w http.ResponseWriter, r *http.Request) {
 	return
 }
 
-func sendErrorResponse(w http.ResponseWriter,  message string, code int) {
-	b,_ := json.Marshal(Error{
-		Code: code,
-		Description: message,
-	})
-
-	w.Header().Set("content-type", "application/json")
-	w.WriteHeader(http.StatusBadRequest)
-	w.Write(b)
-}
-
-func validateHeaders(h http.Header) error {
-	//check content-type
-	expectedContentType := "multipart/form-data"
-	if !strings.Contains(h.Get("content-type"), "multipart/form-data") {
-		return fmt.Errorf("invalid content-type, expected: %v", expectedContentType)
+func validatePublishRequest(r *http.Request) (int, error) {
+	// Validate Method
+	if r.Method != "POST" {
+		return http.StatusMethodNotAllowed, fmt.Errorf("")
 	}
 
-	return nil
-}
+	// Validate content-type
+	expectedContentType := "multipart/form-data"
+	if !strings.Contains(r.Header.Get("content-type"), expectedContentType) {
+		return http.StatusBadRequest, fmt.Errorf("invalid content-type, expected: %v", expectedContentType)
+	}
 
-func validateFormParameters(r *http.Request) error {
+	// Validate parameters
 	missingParams := make([]string, 0)
 	for _, param := range requiredParams {
 		param := strings.ToLower(param)
@@ -116,9 +90,27 @@ func validateFormParameters(r *http.Request) error {
 	}
 
 	if len(missingParams) > 0 {
-		return fmt.Errorf("missing params: %v", strings.Join(missingParams, ", "))
+		return http.StatusBadRequest, fmt.Errorf("missing params: %v", strings.Join(missingParams, ", "))
 	}
-	return nil
+
+	// Validate param values
+	if err:= validateParams(r.FormValue(strings.ToLower(TestType)),
+		r.FormValue(strings.ToLower(ReportFormat))); err != nil {
+		return http.StatusBadRequest, err
+	}
+
+	return 0, nil
+}
+
+func sendErrorResponse(w http.ResponseWriter,  message string, code int) {
+	b,_ := json.Marshal(Error{
+		Code: code,
+		Description: message,
+	})
+
+	w.Header().Set("content-type", "application/json")
+	w.WriteHeader(http.StatusBadRequest)
+	w.Write(b)
 }
 
 

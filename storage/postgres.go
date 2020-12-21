@@ -33,7 +33,6 @@ func (p Postgres) Insert(query interface{}) error {
 	if _, err := p.db.Model(query).Insert(); err != nil {
 		return err
 	}
-
 	return nil
 }
 

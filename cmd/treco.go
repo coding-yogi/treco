@@ -52,14 +52,14 @@ func init() {
 	rootCmd.AddCommand(serveCmd)
 }
 
-func validateParams(cfg config) error {
+func validateParams(testType, reportType string) error {
 	//check for valid test type
-	if !isValid(cfg.testType, validTestTypes) {
+	if !isValid(testType, validTestTypes) {
 		return ErrInvalidTestType
 	}
 
 	//check for valid test report format
-	if !isValid(cfg.reportFormat, validReportFormats) {
+	if !isValid(reportType, validReportFormats) {
 		return ErrInvalidReportFormat
 	}
 
