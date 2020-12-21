@@ -3,8 +3,8 @@ package cmd
 import (
 	"fmt"
 	"github.com/spf13/cobra"
+	"io"
 	"log"
-	"os"
 	"strings"
 	"time"
 	"treco/model"
@@ -13,10 +13,10 @@ import (
 )
 
 const (
-	ReportFile   = "ReportFile"
-	ReportFormat = "ReportFormat"
+	ReportFile   = "REPORT_FILE"
+	ReportFormat = "REPORT_FORMAT"
 	Service      = "SERVICE_NAME"
-	TestType     = "TestType"
+	TestType     = "TEST_TYPE"
 	BuildID      = "CI_JOB_ID"
 )
 
@@ -33,40 +33,14 @@ type config struct {
 var validTestTypes = []string{"unit", "contract", "integration", "e2e"}
 var validReportFormats = []string{"junit"}
 
+var (
+	ErrInvalidTestType     = fmt.Errorf("test type should be one of %v", validTestTypes)
+	ErrInvalidReportFormat = fmt.Errorf("report format should be one of %v", validReportFormats)
+)
+
 var rootCmd = &cobra.Command{
 	Use:   "treco",
-	Short: "Commandline tool to push your test stats to datasource",
-	Run: func(cmd *cobra.Command, args []string) {
-		//validate flags
-		err := validateFlags(cfg)
-		exitOnError(err)
-
-		//check for report file
-		reportFile, err := os.OpenFile(cfg.reportFile, os.O_RDONLY, 0644)
-		exitOnError(err)
-		defer reportFile.Close()
-
-		//connect to storage
-		executor, err := storage.New()
-		exitOnError(err)
-		defer executor.Close()
-
-		result := model.Result{
-			DbHandler:  executor,
-			Build:      cfg.build,
-			Service:    strings.ToLower(cfg.service),
-			TestType:   strings.ToLower(cfg.testType),
-			ExecutedAt: time.Now(),
-		}
-
-		//transform file data into required format
-		err = report.Parse(reportFile, cfg.reportFormat, &result)
-		exitOnError(err)
-
-		//write to storage
-		err = result.Save()
-		exitOnError(err)
-	},
+	Short: "Test Report Collector",
 }
 
 func Execute() error {
@@ -74,35 +48,19 @@ func Execute() error {
 }
 
 func init() {
-	flags := rootCmd.Flags()
-	flags.StringVarP(&cfg.reportFile, "report", "r", os.Getenv(ReportFile), "input file containing test reports")
-	flags.StringVarP(&cfg.reportFormat, "format", "f", os.Getenv(ReportFormat), "report of report file")
-	flags.StringVarP(&cfg.service, "service", "s", os.Getenv(Service), "service name")
-	flags.StringVarP(&cfg.testType, "type", "t", os.Getenv(TestType), "type of tests executed. 'unit', 'contract', 'integration' or 'e2e")
-	flags.StringVarP(&cfg.build, "build", "b", os.Getenv(BuildID), "CI build name or number to uniquely identify the build")
+	rootCmd.AddCommand(collectCmd)
+	rootCmd.AddCommand(serveCmd)
 }
 
-func validateFlags(cfg config) error {
-	//check for empty flags
-	log.Println("validating parameters")
-	if cfg.reportFile == "" || cfg.reportFormat == "" || cfg.service == "" || cfg.testType == "" || cfg.build == "" {
-		return fmt.Errorf("\nmissing arguments, please run `treco --help` for more info\n"+
-			"\nyou can also supply arguments via following ENVIRONMENT variables\n"+
-			"export %s=\n"+
-			"export %s=\n"+
-			"export %s=\n"+
-			"export %s=\n"+
-			"export %s=\n", ReportFile, ReportFormat, Service, TestType, BuildID)
-	}
-
+func validateParams(cfg config) error {
 	//check for valid test type
 	if !isValid(cfg.testType, validTestTypes) {
-		return fmt.Errorf("test type should be one of %v. %v is not a valid test type\n", validTestTypes, cfg.testType)
+		return ErrInvalidTestType
 	}
 
 	//check for valid test report format
 	if !isValid(cfg.reportFormat, validReportFormats) {
-		return fmt.Errorf("report should be one of %v. %v is not a valid report report\n", validReportFormats, cfg.reportFormat)
+		return ErrInvalidReportFormat
 	}
 
 	return nil
@@ -123,4 +81,36 @@ func exitOnError(e error) {
 	if e != nil {
 		log.Fatal(e)
 	}
+}
+
+func process(cfg config, f io.Reader) error {
+	// Connect to storage
+	executor, err := storage.New()
+	if err != nil {
+		return err
+	}
+	defer executor.Close()
+
+	// Create base result
+	result := model.Result{
+		DbHandler:  executor,
+		Build:      cfg.build,
+		Service:    strings.ToLower(cfg.service),
+		TestType:   strings.ToLower(cfg.testType),
+		ExecutedAt: time.Now(),
+	}
+
+	// Transform file data into required format
+	err = report.Parse(f, cfg.reportFormat, &result)
+	if err != nil {
+		return err
+	}
+
+	// Write to storage
+	err = result.Save()
+	if err != nil {
+		return err
+	}
+
+	return nil
 }
