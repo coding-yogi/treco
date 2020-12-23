@@ -8,18 +8,21 @@ import (
 )
 
 const (
-	DBHost       = "DB_HOST"
-	DBPort       = "DB_PORT"
-	DBName       = "DB_NAME"
-	DBUser       = "DB_USER"
-	DBPassword   = "DB_PASSWORD"
-	DBType       = "DB_TYPE"
+	DBHost     = "DB_HOST"
+	DBPort     = "DB_PORT"
+	DBName     = "DB_NAME"
+	DBUser     = "DB_USER"
+	DBPassword = "DB_PASSWORD"
+	DBType     = "DB_TYPE"
 )
+
+var dbHandler DBHandler
 
 // DBHandler interface
 type DBHandler interface {
-	Schema(tables []interface{}) error
+	CreateSchema(tables []interface{}) error
 	Insert(query interface{}) error
+	Select(query interface{}) (interface{}, error)
 	Close() error
 }
 
@@ -32,13 +35,17 @@ type db struct {
 	password string
 }
 
-func New() (DBHandler, error) {
+func Handler() *DBHandler {
+	return &dbHandler
+}
+
+func New() error {
 	log.Println("validating DB details")
-	if os.Getenv(DBType) == "" || os.Getenv(DBName) == "" || os.Getenv(DBHost) == "" ||  os.Getenv(DBPort) == "" ||
+	if os.Getenv(DBType) == "" || os.Getenv(DBName) == "" || os.Getenv(DBHost) == "" || os.Getenv(DBPort) == "" ||
 		os.Getenv(DBUser) == "" || os.Getenv(DBPassword) == "" {
 
-		return nil, fmt.Errorf("missing db details, please set below environment variables: " +
-			"%v, %v, %v, %v, %v, %v\n" , DBType, DBName, DBHost, DBPort, DBUser, DBPassword)
+		return fmt.Errorf("missing db details, please set below environment variables: "+
+			"%v, %v, %v, %v, %v, %v\n", DBType, DBName, DBHost, DBPort, DBUser, DBPassword)
 	}
 
 	store := db{
@@ -50,21 +57,14 @@ func New() (DBHandler, error) {
 		password: os.Getenv(DBPassword),
 	}
 
-	return store.new()
-}
+	var err error
 
-func (d db) new() (DBHandler, error) {
-	var (
-		executor DBHandler
-		err      error
-	)
-
-	switch strings.ToLower(d.dbType) {
+	switch strings.ToLower(store.dbType) {
 	case "postgres":
-		executor, err = newPostgresDB(d)
+		dbHandler, err = newPostgresDB(store)
 	default:
-		return nil, fmt.Errorf("storage type %v not supported, please check value of DB_TYPE in environment variables", d.dbType)
+		return fmt.Errorf("storage type %v not supported, please check value of DB_TYPE in environment variables", store.dbType)
 	}
 
-	return executor, err
+	return err
 }

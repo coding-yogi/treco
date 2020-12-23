@@ -8,17 +8,19 @@ import (
 )
 
 type parser interface {
-	parse(r io.Reader, result *model.Result) error
+	parse(r io.Reader, result *model.Data) error
 }
 
-func Parse(r io.Reader, rf string, result *model.Result) error {
+func Parse(r io.Reader, data *model.Data) error {
 	var parser parser
 	var err error
 
-	switch strings.ToLower(rf) {
+	rf := strings.ToLower(data.ReportFormat)
+
+	switch rf {
 	case "junit":
 		parser = junitXmlParser{}
-		err = parser.parse(r, result)
+		err = parser.parse(r, data)
 	default:
 		err = errors.New("invalid report type " + rf)
 	}

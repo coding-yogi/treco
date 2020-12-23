@@ -18,6 +18,7 @@ const (
 	Service      = "SERVICE_NAME"
 	TestType     = "TEST_TYPE"
 	BuildID      = "CI_JOB_ID"
+	Jira         = "JIRA_PROJECT"
 )
 
 var cfg config
@@ -28,6 +29,7 @@ type config struct {
 	service      string
 	testType     string
 	build        string
+	jira         string
 }
 
 var validTestTypes = []string{"unit", "contract", "integration", "e2e"}
@@ -50,6 +52,20 @@ func Execute() error {
 func init() {
 	rootCmd.AddCommand(collectCmd)
 	rootCmd.AddCommand(serveCmd)
+}
+
+func createDBSchema(dbh storage.DBHandler) error {
+	switch db := dbh.(type) {
+	case storage.Postgres:
+		db.CreateSchema([]interface{}{
+			(*model.SuiteResult)(nil),
+			(*model.Scenario)(nil),
+			(*model.Feature)(nil),
+			(*model.ScenarioResult)(nil),
+		})
+	}
+
+	return nil
 }
 
 func validateParams(testType, reportType string) error {
@@ -84,30 +100,29 @@ func exitOnError(e error) {
 }
 
 func process(cfg config, f io.Reader) error {
-	// Connect to storage
-	executor, err := storage.New()
-	if err != nil {
-		return err
-	}
-	defer executor.Close()
+
+	var err error
 
 	// Create base result
-	result := model.Result{
-		DbHandler:  executor,
-		Build:      cfg.build,
-		Service:    strings.ToLower(cfg.service),
-		TestType:   strings.ToLower(cfg.testType),
-		ExecutedAt: time.Now(),
+	data := model.Data{
+		Jira:         cfg.jira,
+		ReportFormat: cfg.reportFormat,
+		SuiteResult: model.SuiteResult{
+			Build:      cfg.build,
+			Service:    strings.ToLower(cfg.service),
+			TestType:   strings.ToLower(cfg.testType),
+			ExecutedAt: time.Now(),
+		},
 	}
 
 	// Transform file data into required format
-	err = report.Parse(f, cfg.reportFormat, &result)
+	err = report.Parse(f, &data)
 	if err != nil {
 		return err
 	}
 
 	// Write to storage
-	err = result.Save()
+	err = data.Save()
 	if err != nil {
 		return err
 	}

@@ -2,6 +2,8 @@ package storage
 
 import (
 	"context"
+	"fmt"
+	"github.com/go-pg/pg/extra/pgdebug"
 	"github.com/go-pg/pg/v10"
 	"github.com/go-pg/pg/v10/orm"
 
@@ -13,12 +15,17 @@ type Postgres struct {
 	db *pg.DB
 }
 
-// Schema creation
-func (p Postgres) Schema(tables []interface{}) error {
+// GetDB
+func (p Postgres) GetDB() *pg.DB {
+	return p.db
+}
+
+// CreateSchema
+func (p Postgres) CreateSchema(tables []interface{}) error {
 	for _, t := range tables {
 		err := p.db.Model(t).CreateTable(&orm.CreateTableOptions{
-			Temp: false,
-			IfNotExists: true,
+			Temp:          false,
+			IfNotExists:   true,
 			FKConstraints: true,
 		})
 		if err != nil {
@@ -28,12 +35,26 @@ func (p Postgres) Schema(tables []interface{}) error {
 	return nil
 }
 
+// Select from postgres DB
+func (p Postgres) Select(query interface{}) (interface{}, error) {
+	q, ok := query.(*orm.Query)
+	if !ok {
+		return nil, fmt.Errorf("query should be of type orm.query")
+	}
+
+	err := q.Select()
+	return nil, err
+}
+
 // Insert into postgres DB
 func (p Postgres) Insert(query interface{}) error {
-	if _, err := p.db.Model(query).Insert(); err != nil {
-		return err
+	q, ok := query.(*orm.Query)
+	if !ok {
+		return fmt.Errorf("query should be of type *orm.Query")
 	}
-	return nil
+
+	_, err := q.Insert()
+	return err
 }
 
 // Close db connection
@@ -57,6 +78,11 @@ func newPostgresDB(s db) (Postgres, error) {
 	if err := db.Ping(ctx); err != nil {
 		return Postgres{}, err
 	}
+
+	db.AddQueryHook(pgdebug.DebugHook{
+		// Print all queries.
+		Verbose: true,
+	})
 
 	return Postgres{db: db}, nil
 }

@@ -7,6 +7,7 @@ import (
 	"log"
 	"net/http"
 	"strings"
+	"treco/storage"
 )
 
 type Error struct {
@@ -15,21 +16,39 @@ type Error struct {
 }
 
 var port int
-var requiredParams= []string{ReportFormat, TestType, BuildID, Service}
+var requiredParams = []string{ReportFormat, TestType, BuildID, Service, Jira}
 
 var serveCmd = &cobra.Command{
 	Use:   "serve",
 	Short: "Runs as a web server",
 	Run: func(cmd *cobra.Command, args []string) {
-		http.HandleFunc("/treco/v1/publish/report", publishHandler)
-		log.Printf("Starting server on port %v\n", port)
-		log.Fatal(http.ListenAndServe(fmt.Sprintf(":%v", port), nil))
+		startServer()
 	},
 }
 
 func init() {
 	flags := serveCmd.Flags()
 	flags.IntVarP(&port, "port", "p", 8080, "port for server to run")
+}
+
+func startServer() {
+	var err error
+
+	// Connect to storage
+	err = storage.New()
+	exitOnError(err)
+
+	handler := storage.Handler()
+	defer (*handler).Close()
+
+	//Create schema if required
+	err = createDBSchema(*handler)
+	exitOnError(err)
+
+	// Define http handler
+	http.HandleFunc("/treco/v1/publish/report", publishHandler)
+	log.Printf("Starting server on port %v\n", port)
+	log.Fatal(http.ListenAndServe(fmt.Sprintf(":%v", port), nil))
 }
 
 func publishHandler(w http.ResponseWriter, r *http.Request) {
@@ -49,16 +68,17 @@ func publishHandler(w http.ResponseWriter, r *http.Request) {
 	defer reportFile.Close()
 
 	cfg = config{
-		reportFile: "",
+		reportFile:   "",
 		reportFormat: r.FormValue(strings.ToLower(ReportFormat)),
-		testType: r.FormValue(strings.ToLower(TestType)),
-		build: r.FormValue(strings.ToLower(BuildID)),
-		service: r.FormValue(strings.ToLower(Service)),
+		testType:     r.FormValue(strings.ToLower(TestType)),
+		build:        r.FormValue(strings.ToLower(BuildID)),
+		service:      r.FormValue(strings.ToLower(Service)),
+		jira:         r.FormValue(strings.ToLower(Jira)),
 	}
 
 	// Process file
 	if err := process(cfg, reportFile); err != nil {
-		log.Println("error while processing file: " + err.Error())
+		log.Println("error processing: " + err.Error())
 		sendErrorResponse(w, "unable to process the request", http.StatusInternalServerError)
 		return
 	}
@@ -94,7 +114,7 @@ func validatePublishRequest(r *http.Request) (int, error) {
 	}
 
 	// Validate param values
-	if err:= validateParams(r.FormValue(strings.ToLower(TestType)),
+	if err := validateParams(r.FormValue(strings.ToLower(TestType)),
 		r.FormValue(strings.ToLower(ReportFormat))); err != nil {
 		return http.StatusBadRequest, err
 	}
@@ -102,9 +122,9 @@ func validatePublishRequest(r *http.Request) (int, error) {
 	return 0, nil
 }
 
-func sendErrorResponse(w http.ResponseWriter,  message string, code int) {
-	b,_ := json.Marshal(Error{
-		Code: code,
+func sendErrorResponse(w http.ResponseWriter, message string, code int) {
+	b, _ := json.Marshal(Error{
+		Code:        code,
 		Description: message,
 	})
 
@@ -112,12 +132,3 @@ func sendErrorResponse(w http.ResponseWriter,  message string, code int) {
 	w.WriteHeader(http.StatusBadRequest)
 	w.Write(b)
 }
-
-
-
-
-
-
-
-
-
