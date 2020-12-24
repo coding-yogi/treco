@@ -20,9 +20,8 @@ var dbHandler DBHandler
 
 // DBHandler interface
 type DBHandler interface {
-	CreateSchema(tables []interface{}) error
-	Insert(query interface{}) error
-	Select(query interface{}) (interface{}, error)
+	Schema(models []interface{}) error
+	Insert(model interface{}) error
 	Close() error
 }
 

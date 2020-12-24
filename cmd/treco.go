@@ -6,10 +6,8 @@ import (
 	"io"
 	"log"
 	"strings"
-	"time"
 	"treco/model"
 	"treco/report"
-	"treco/storage"
 )
 
 const (
@@ -56,20 +54,6 @@ func init() {
 	rootCmd.AddCommand(serveCmd)
 }
 
-func createDBSchema(dbh storage.DBHandler) error {
-	switch db := dbh.(type) {
-	case storage.Postgres:
-		return db.CreateSchema([]interface{}{
-			(*model.SuiteResult)(nil),
-			(*model.Scenario)(nil),
-			(*model.Feature)(nil),
-			(*model.ScenarioResult)(nil),
-		})
-	}
-
-	return nil
-}
-
 func validateParams(testType, reportType string) error {
 	//check for valid test type
 	if !isValid(testType, validTestTypes) {
@@ -101,7 +85,7 @@ func exitOnError(e error) {
 	}
 }
 
-func process(cfg config, f io.Reader) error {
+func process(cfg *config, f *io.Reader) error {
 	var err error
 
 	// Create base result
@@ -111,7 +95,6 @@ func process(cfg config, f io.Reader) error {
 		SuiteResult: model.SuiteResult{
 			Build:       cfg.build,
 			Environment: cfg.environment,
-			ExecutedAt:  time.Now(),
 			Service:     strings.ToLower(cfg.service),
 			TestType:    strings.ToLower(cfg.testType),
 		},

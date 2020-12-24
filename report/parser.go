@@ -8,10 +8,10 @@ import (
 )
 
 type parser interface {
-	parse(r io.Reader, result *model.Data) error
+	parse(r *io.Reader, result *model.Data) error
 }
 
-func Parse(r io.Reader, data *model.Data) error {
+func Parse(r *io.Reader, data *model.Data) error {
 	var parser parser
 	var err error
 

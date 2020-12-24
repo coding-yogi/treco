@@ -4,9 +4,11 @@ import (
 	"encoding/json"
 	"fmt"
 	"github.com/spf13/cobra"
+	"io"
 	"log"
 	"net/http"
 	"strings"
+	"treco/model"
 	"treco/storage"
 )
 
@@ -41,9 +43,8 @@ func startServer() {
 	handler := storage.Handler()
 	defer (*handler).Close()
 
-	//Create schema if required
-	err = createDBSchema(*handler)
-	exitOnError(err)
+	// Create schema
+	(*handler).Schema([]interface{}{&model.SuiteResult{}, &model.ScenarioResult{}, &model.Scenario{}, &model.Feature{}})
 
 	// Define http handler
 	http.HandleFunc("/treco/v1/publish/report", publishHandler)
@@ -66,8 +67,9 @@ func publishHandler(w http.ResponseWriter, r *http.Request) {
 	}
 
 	defer reportFile.Close()
+	var rf io.Reader = reportFile
 
-	cfg = config{
+	cfg := config{
 		build:        r.FormValue(strings.ToLower(BuildID)),
 		environment:  r.FormValue(strings.ToLower(Environment)),
 		jira:         r.FormValue(strings.ToLower(Jira)),
@@ -77,7 +79,7 @@ func publishHandler(w http.ResponseWriter, r *http.Request) {
 	}
 
 	// Process file
-	if err := process(cfg, reportFile); err != nil {
+	if err := process(&cfg, &rf); err != nil {
 		log.Println("error processing: " + err.Error())
 		sendErrorResponse(w, "unable to process the request", http.StatusInternalServerError)
 		return
@@ -101,7 +103,7 @@ func validatePublishRequest(r *http.Request) (int, error) {
 	}
 
 	// Validate parameters
-	missingParams := make([]string, 0)
+	missingParams := make([]string, 0, len(requiredParams))
 	for _, param := range requiredParams {
 		param := strings.ToLower(param)
 		if r.FormValue(param) == "" {

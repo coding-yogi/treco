@@ -25,9 +25,9 @@ type JunitReport struct {
 // JunitTestSuite
 type JunitTestSuite struct {
 	XMLName        xml.Name        `xml:"testsuite"`
-	Tests          int             `xml:"tests,attr"`
-	Skipped        int             `xml:"skipped,attr"`
-	Failures       int             `xml:"failures,attr"`
+	Tests          uint            `xml:"tests,attr"`
+	Skipped        uint            `xml:"skipped,attr"`
+	Failures       uint            `xml:"failures,attr"`
 	Time           float64         `xml:"time,attr"`
 	JunitTestCases []JunitTestCase `xml:"testcase"`
 }
@@ -51,12 +51,12 @@ type Skipped struct{}
 
 type junitXmlParser struct{}
 
-func (junitXmlParser) parse(r io.Reader, result *model.Data) error {
+func (junitXmlParser) parse(r *io.Reader, result *model.Data) error {
 
 	suiteResult := &result.SuiteResult
 
 	log.Println("reading report file")
-	b, err := ioutil.ReadAll(r)
+	b, err := ioutil.ReadAll(*r)
 	if err != nil {
 		fmt.Println("error reading: " + err.Error())
 		return err
@@ -86,21 +86,18 @@ func (junitXmlParser) parse(r io.Reader, result *model.Data) error {
 		suiteResult.TimeTaken = +s.Time
 
 		for _, u := range s.JunitTestCases {
-			name := u.Name
 			status := PASSED
-			if strings.ToLower(u.Failure.Message) != "" {
+			if u.Failure.Message != "" {
 				status = FAILED
 			} else if u.Time == 0.0 {
 				status = SKIPPED
 			}
 
-			time := u.Time
-
 			suiteResult.ScenarioResults = append(suiteResult.ScenarioResults, &model.ScenarioResult{
-				SuiteResultId: suiteResult.Id,
-				Name:          name,
+				SuiteResultID: suiteResult.ID,
+				Name:          u.Name,
 				Status:        status,
-				TimeTaken:     time,
+				TimeTaken:     u.Time,
 			})
 		}
 	}
