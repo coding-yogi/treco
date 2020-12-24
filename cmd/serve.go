@@ -16,7 +16,7 @@ type Error struct {
 }
 
 var port int
-var requiredParams = []string{ReportFormat, TestType, BuildID, Service, Jira}
+var requiredParams = []string{BuildID, Environment, Jira, ReportFormat, Service, TestType}
 
 var serveCmd = &cobra.Command{
 	Use:   "serve",
@@ -68,12 +68,12 @@ func publishHandler(w http.ResponseWriter, r *http.Request) {
 	defer reportFile.Close()
 
 	cfg = config{
-		reportFile:   "",
+		build:        r.FormValue(strings.ToLower(BuildID)),
+		environment:  r.FormValue(strings.ToLower(Environment)),
+		jira:         r.FormValue(strings.ToLower(Jira)),
+		service:      r.FormValue(strings.ToLower(Service)),
 		reportFormat: r.FormValue(strings.ToLower(ReportFormat)),
 		testType:     r.FormValue(strings.ToLower(TestType)),
-		build:        r.FormValue(strings.ToLower(BuildID)),
-		service:      r.FormValue(strings.ToLower(Service)),
-		jira:         r.FormValue(strings.ToLower(Jira)),
 	}
 
 	// Process file

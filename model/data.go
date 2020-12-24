@@ -23,6 +23,7 @@ type SuiteResult struct {
 	Build           string            `pg:",unique:suite_result"`
 	TestType        string            `pg:",unique:suite_result"`
 	Service         string            `pg:",notnull"`
+	Environment		string			  `pg:",notnull"`
 	TimeTaken       float64           `pg:",notnull"`
 	TotalExecuted   int               `pg:",use_zero"`
 	TotalPassed     int               `pg:",use_zero"`

@@ -44,12 +44,14 @@ var collectCmd = &cobra.Command{
 
 func init() {
 	flags := collectCmd.Flags()
+
+	flags.StringVarP(&cfg.build, "build", "b", os.Getenv(BuildID), "CI build name or number to uniquely identify the build")
+	flags.StringVarP(&cfg.environment, "environment", "e", os.Getenv(Environment), "Environment on which the build is executed")
+	flags.StringVarP(&cfg.jira, "jira", "j", os.Getenv(Jira), "Jira project name")
 	flags.StringVarP(&cfg.reportFile, "report", "r", os.Getenv(ReportFile), "input file containing test reports")
 	flags.StringVarP(&cfg.reportFormat, "format", "f", os.Getenv(ReportFormat), "report of report file")
 	flags.StringVarP(&cfg.service, "service", "s", os.Getenv(Service), "service name")
 	flags.StringVarP(&cfg.testType, "type", "t", os.Getenv(TestType), "type of tests executed. 'unit', 'contract', 'integration' or 'e2e")
-	flags.StringVarP(&cfg.build, "build", "b", os.Getenv(BuildID), "CI build name or number to uniquely identify the build")
-	flags.StringVarP(&cfg.jira, "jira", "j", os.Getenv(Jira), "Jira project name")
 }
 
 func validateFlags(cfg config) error {
@@ -58,12 +60,7 @@ func validateFlags(cfg config) error {
 	if cfg.reportFile == "" || cfg.reportFormat == "" || cfg.service == "" || cfg.testType == "" || cfg.build == "" || cfg.jira == "" {
 		return fmt.Errorf("\nmissing arguments, please run `treco --help` for more info\n"+
 			"\nyou can also supply arguments via following ENVIRONMENT variables\n"+
-			"export %s=\n"+
-			"export %s=\n"+
-			"export %s=\n"+
-			"export %s=\n"+
-			"export %s=\n"+
-			"export %s=\n", ReportFile, ReportFormat, Service, TestType, BuildID, Jira)
+			"%s, %s, %s, %s, %s, %s, %s ", BuildID, Environment, Jira, ReportFile, ReportFormat, Service, TestType)
 	}
 
 	return validateParams(cfg.testType, cfg.reportFormat)

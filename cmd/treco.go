@@ -13,23 +13,25 @@ import (
 )
 
 const (
+	BuildID      = "CI_JOB_ID"
+	Environment  = "ENVIRONMENT"
+	Jira         = "JIRA_PROJECT"
 	ReportFile   = "REPORT_FILE"
 	ReportFormat = "REPORT_FORMAT"
 	Service      = "SERVICE_NAME"
 	TestType     = "TEST_TYPE"
-	BuildID      = "CI_JOB_ID"
-	Jira         = "JIRA_PROJECT"
 )
 
 var cfg config
 
 type config struct {
+	build        string
+	environment  string
+	jira         string
 	reportFile   string
 	reportFormat string
 	service      string
 	testType     string
-	build        string
-	jira         string
 }
 
 var validTestTypes = []string{"unit", "contract", "integration", "e2e"}
@@ -57,7 +59,7 @@ func init() {
 func createDBSchema(dbh storage.DBHandler) error {
 	switch db := dbh.(type) {
 	case storage.Postgres:
-		db.CreateSchema([]interface{}{
+		return db.CreateSchema([]interface{}{
 			(*model.SuiteResult)(nil),
 			(*model.Scenario)(nil),
 			(*model.Feature)(nil),
@@ -100,7 +102,6 @@ func exitOnError(e error) {
 }
 
 func process(cfg config, f io.Reader) error {
-
 	var err error
 
 	// Create base result
@@ -108,10 +109,11 @@ func process(cfg config, f io.Reader) error {
 		Jira:         cfg.jira,
 		ReportFormat: cfg.reportFormat,
 		SuiteResult: model.SuiteResult{
-			Build:      cfg.build,
-			Service:    strings.ToLower(cfg.service),
-			TestType:   strings.ToLower(cfg.testType),
-			ExecutedAt: time.Now(),
+			Build:       cfg.build,
+			Environment: cfg.environment,
+			ExecutedAt:  time.Now(),
+			Service:     strings.ToLower(cfg.service),
+			TestType:    strings.ToLower(cfg.testType),
 		},
 	}
 
