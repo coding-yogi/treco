@@ -34,20 +34,12 @@ type JunitTestSuite struct {
 
 // JunitTestCase
 type JunitTestCase struct {
-	XMLName xml.Name `xml:"testcase"`
-	Name    string   `xml:"name,attr"`
-	Time    float64  `xml:"time,attr"`
-	Failure Failure  `xml:"failure,omitempty"`
-	Skipped Skipped  `xml:"skipped,omitempty"`
+	XMLName xml.Name  `xml:"testcase"`
+	Name    string    `xml:"name,attr"`
+	Time    float64   `xml:"time,attr"`
+	Failure *struct{} `xml:"failure,omitempty"`
+	Skipped *struct{} `xml:"skipped,omitempty"`
 }
-
-// Failure
-type Failure struct {
-	Message string `xml:"message,attr"`
-}
-
-// Skipped
-type Skipped struct{}
 
 type junitXmlParser struct{}
 
@@ -87,9 +79,9 @@ func (junitXmlParser) parse(r io.Reader, result *model.Data) error {
 
 		for _, u := range s.JunitTestCases {
 			status := PASSED
-			if u.Failure.Message != "" {
+			if u.Failure != nil {
 				status = FAILED
-			} else if u.Time == 0.0 {
+			} else if u.Skipped != nil {
 				status = SKIPPED
 			}
 
