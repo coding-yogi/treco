@@ -1,7 +1,6 @@
 package model
 
 import (
-	"fmt"
 	"gorm.io/gorm/clause"
 	"regexp"
 	"strings"
@@ -53,7 +52,7 @@ type Scenario struct {
 	Name      string    `gorm:"uniqueIndex:ui_scenario"`
 	TestType  string    `gorm:"uniqueIndex:ui_scenario"`
 	Service   string    `gorm:"uniqueIndex:ui_scenario"`
-	Features  []*Feature `gorm:"many2many:feature_scenarios"`
+	Features  []Feature `gorm:"many2many:feature_scenarios"`
 	CreatedAt time.Time
 	UpdatedAt time.Time
 }
@@ -62,7 +61,7 @@ type Scenario struct {
 type Feature struct {
 	ID        string `gorm:"primaryKey"`
 	Title     string
-	Scenarios []*Scenario `gorm:"many2many:feature_scenarios"`
+	Scenarios []Scenario `gorm:"many2many:feature_scenarios"`
 	CreatedAt time.Time
 	UpdatedAt time.Time
 }
@@ -74,18 +73,18 @@ func (d *Data) Save() error {
 	suiteResult := &d.SuiteResult
 	scenarioResults := suiteResult.ScenarioResults
 
-	scenarios := make([]*Scenario, 0, len(scenarioResults)) //scenarios
+	scenarios := make([]Scenario, 0, len(scenarioResults)) //scenarios
 
 	// Loop through scenarios
 	for _, scenarioResult := range scenarioResults {
 		featureIds := getFeaturesFromScenario(d.Jira, scenarioResult.Name)
-		features := make([]*Feature, 0, len(featureIds)) //features
+		features := make([]Feature, 0, len(featureIds)) //features
 
 		for _, featureId := range featureIds {
-			features = append(features, &Feature{ID: featureId})
+			features = append(features, Feature{ID: featureId})
 		}
 
-		scenario := &Scenario{
+		scenario := Scenario{
 			Name:     scenarioResult.Name,
 			TestType: d.SuiteResult.TestType,
 			Service:  d.SuiteResult.Service,
@@ -97,14 +96,13 @@ func (d *Data) Save() error {
 
 	switch db := (*dbh).(type) {
 	case storage.Postgres:
-		return d.writeToPostgres(db, suiteResult, scenarioResults, scenarios)
+		return writeToPostgres(&db, suiteResult, scenarios)
 	}
 
 	return nil
 }
 
-func (d *Data) writeToPostgres(db storage.Postgres, suiteResult *SuiteResult, scenarioResults []*ScenarioResult,
-	scenarios []*Scenario) error {
+func writeToPostgres(db *storage.Postgres, suiteResult *SuiteResult, scenarios []Scenario) error {
 
 	// Insert scenarios
 	if err := db.GetDB().Clauses(clause.OnConflict{
@@ -114,8 +112,8 @@ func (d *Data) writeToPostgres(db storage.Postgres, suiteResult *SuiteResult, sc
 		return err
 	}
 
-	// Update scenario results with scenario id and suite result id
-	for i, scenarioResult := range scenarioResults {
+	// Update scenario results with scenario id
+	for i, scenarioResult := range suiteResult.ScenarioResults {
 		scenarioResult.ScenarioID = scenarios[i].ID
 	}
 
@@ -124,8 +122,8 @@ func (d *Data) writeToPostgres(db storage.Postgres, suiteResult *SuiteResult, sc
 }
 
 func getFeaturesFromScenario(p string, s string) []string {
-	p = fmt.Sprintf(`(?i)%v-\d+`, p)
-	re := regexp.MustCompile(p)
+	pat := `(?i)` + p + `-\d+`
+	re := regexp.MustCompile(pat)
 	matches := re.FindAllString(s, -1)
 
 	for i := range matches {

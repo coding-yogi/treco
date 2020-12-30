@@ -32,14 +32,6 @@ type config struct {
 	testType     string
 }
 
-var validTestTypes = []string{"unit", "contract", "integration", "e2e"}
-var validReportFormats = []string{"junit"}
-
-var (
-	ErrInvalidTestType     = fmt.Errorf("test type should be one of %v", validTestTypes)
-	ErrInvalidReportFormat = fmt.Errorf("report format should be one of %v", validReportFormats)
-)
-
 var rootCmd = &cobra.Command{
 	Use:   "treco",
 	Short: "Test Report Collector",
@@ -55,14 +47,18 @@ func init() {
 }
 
 func validateParams(testType, reportType string) error {
+
+	validTestTypes := [...]string{"unit", "contract", "integration", "e2e"}
+	validReportFormats := [...]string{"junit"}
+
 	//check for valid test type
-	if !isValid(testType, validTestTypes) {
-		return ErrInvalidTestType
+	if !isValid(testType, validTestTypes[:]) {
+		return fmt.Errorf("test type should be one of %v", validTestTypes)
 	}
 
 	//check for valid test report format
-	if !isValid(reportType, validReportFormats) {
-		return ErrInvalidReportFormat
+	if !isValid(reportType, validReportFormats[:]) {
+		return fmt.Errorf("report format should be one of %v", validReportFormats)
 	}
 
 	return nil
@@ -85,11 +81,11 @@ func exitOnError(e error) {
 	}
 }
 
-func process(cfg *config, f *io.Reader) error {
+func process(cfg config, f io.Reader) error {
 	var err error
 
 	// Create base result
-	data := model.Data{
+	data := &model.Data{
 		Jira:         cfg.jira,
 		ReportFormat: cfg.reportFormat,
 		SuiteResult: model.SuiteResult{
@@ -101,7 +97,7 @@ func process(cfg *config, f *io.Reader) error {
 	}
 
 	// Transform file data into required format
-	err = report.Parse(f, &data)
+	err = report.Parse(f, data)
 	if err != nil {
 		return err
 	}

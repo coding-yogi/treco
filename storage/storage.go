@@ -20,7 +20,6 @@ var dbHandler DBHandler
 
 // DBHandler interface
 type DBHandler interface {
-	Schema(models []interface{}) error
 	Insert(model interface{}) error
 	Close() error
 }

@@ -51,31 +51,31 @@ type Skipped struct{}
 
 type junitXmlParser struct{}
 
-func (junitXmlParser) parse(r *io.Reader, result *model.Data) error {
+func (junitXmlParser) parse(r io.Reader, result *model.Data) error {
 
 	suiteResult := &result.SuiteResult
 
 	log.Println("reading report file")
-	b, err := ioutil.ReadAll(*r)
+	b, err := ioutil.ReadAll(r)
 	if err != nil {
 		fmt.Println("error reading: " + err.Error())
 		return err
 	}
 
-	jur := &JunitReport{}
+	jur := JunitReport{}
 
 	log.Println("unmarshalling to junit report")
 	if strings.Contains(string(b), "testsuites") {
-		if err = xml.Unmarshal(b, jur); err != nil {
+		if err = xml.Unmarshal(b, &jur); err != nil {
 			return err
 		}
 	} else {
-		suite := &JunitTestSuite{}
-		if err = xml.Unmarshal(b, suite); err != nil {
+		suite := JunitTestSuite{}
+		if err = xml.Unmarshal(b, &suite); err != nil {
 			return err
 		}
 
-		jur.TestSuites = append(jur.TestSuites, *suite)
+		jur.TestSuites = append(jur.TestSuites, suite)
 	}
 
 	for _, s := range jur.TestSuites {

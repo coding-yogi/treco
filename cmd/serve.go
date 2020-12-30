@@ -8,7 +8,6 @@ import (
 	"log"
 	"net/http"
 	"strings"
-	"treco/model"
 	"treco/storage"
 )
 
@@ -18,7 +17,7 @@ type Error struct {
 }
 
 var port int
-var requiredParams = []string{BuildID, Environment, Jira, ReportFormat, Service, TestType}
+var requiredParams = [...]string{BuildID, Environment, Jira, ReportFormat, Service, TestType}
 
 var serveCmd = &cobra.Command{
 	Use:   "serve",
@@ -43,9 +42,6 @@ func startServer() {
 	handler := storage.Handler()
 	defer (*handler).Close()
 
-	// Create schema
-	(*handler).Schema([]interface{}{&model.SuiteResult{}, &model.ScenarioResult{}, &model.Scenario{}, &model.Feature{}})
-
 	// Define http handler
 	http.HandleFunc("/treco/v1/publish/report", publishHandler)
 	log.Printf("Starting server on port %v\n", port)
@@ -55,14 +51,14 @@ func startServer() {
 func publishHandler(w http.ResponseWriter, r *http.Request) {
 	// Validate request
 	if status, err := validatePublishRequest(r); err != nil {
-		sendErrorResponse(w, err.Error(), status)
+		sendErrorResponse(w, err, err.Error(), status)
 		return
 	}
 
 	// Read file from report_file
 	reportFile, _, err := r.FormFile(strings.ToLower(ReportFile))
 	if err != nil {
-		sendErrorResponse(w, "unable to retrieve report file", http.StatusBadRequest)
+		sendErrorResponse(w, err, "unable to retrieve report file", http.StatusBadRequest)
 		return
 	}
 
@@ -79,9 +75,9 @@ func publishHandler(w http.ResponseWriter, r *http.Request) {
 	}
 
 	// Process file
-	if err := process(&cfg, &rf); err != nil {
+	if err := process(cfg, rf); err != nil {
 		log.Println("error processing: " + err.Error())
-		sendErrorResponse(w, "unable to process the request", http.StatusInternalServerError)
+		sendErrorResponse(w, err, "unable to process the request", http.StatusInternalServerError)
 		return
 	}
 
@@ -116,18 +112,21 @@ func validatePublishRequest(r *http.Request) (int, error) {
 	}
 
 	// Validate param values
-	if err := validateParams(r.FormValue(strings.ToLower(TestType)),
-		r.FormValue(strings.ToLower(ReportFormat))); err != nil {
+	testType := r.FormValue(strings.ToLower(TestType))
+	reportFormat := r.FormValue(strings.ToLower(ReportFormat))
+	if err := validateParams(testType, reportFormat); err != nil {
 		return http.StatusBadRequest, err
 	}
 
 	return 0, nil
 }
 
-func sendErrorResponse(w http.ResponseWriter, message string, code int) {
+func sendErrorResponse(w http.ResponseWriter, err error, description string, code int) {
+	log.Println(err)
+
 	b, _ := json.Marshal(Error{
 		Code:        code,
-		Description: message,
+		Description: description,
 	})
 
 	w.Header().Set("content-type", "application/json")

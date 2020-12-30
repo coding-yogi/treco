@@ -12,11 +12,6 @@ type Postgres struct {
 	db *gorm.DB
 }
 
-// Schema
-func (p Postgres) Schema(models []interface{}) error {
-	return p.db.AutoMigrate(models...)
-}
-
 // GetDB
 func (p Postgres) GetDB() *gorm.DB {
 	return p.db

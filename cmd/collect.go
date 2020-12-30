@@ -6,7 +6,6 @@ import (
 	"io"
 	"log"
 	"os"
-	"treco/model"
 	"treco/storage"
 )
 
@@ -23,9 +22,6 @@ var collectCmd = &cobra.Command{
 		handler := storage.Handler()
 		defer (*handler).Close()
 
-		// Create schema
-		(*handler).Schema([]interface{}{&model.SuiteResult{}, &model.ScenarioResult{}, &model.Scenario{}, &model.Feature{}})
-
 		//validate flags
 		err = validateFlags(cfg)
 		exitOnError(err)
@@ -37,7 +33,7 @@ var collectCmd = &cobra.Command{
 
 		// Process file
 		var rf io.Reader = reportFile
-		err = process(&cfg, &rf)
+		err = process(cfg, rf)
 		exitOnError(err)
 
 		log.Println("results uploaded successfully")
