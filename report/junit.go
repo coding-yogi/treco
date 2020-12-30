@@ -79,11 +79,11 @@ func (junitXmlParser) parse(r io.Reader, result *model.Data) error {
 	}
 
 	for _, s := range jur.TestSuites {
-		suiteResult.TotalExecuted = +s.Tests
-		suiteResult.TotalFailed = +s.Failures
-		suiteResult.TotalSkipped = +s.Skipped
-		suiteResult.TotalPassed = +(s.Tests - (s.Failures + s.Skipped))
-		suiteResult.TimeTaken = +s.Time
+		suiteResult.TotalExecuted += s.Tests
+		suiteResult.TotalFailed += s.Failures
+		suiteResult.TotalSkipped += s.Skipped
+		suiteResult.TotalPassed += s.Tests - (s.Failures + s.Skipped)
+		suiteResult.TimeTaken += s.Time
 
 		for _, u := range s.JunitTestCases {
 			status := PASSED
