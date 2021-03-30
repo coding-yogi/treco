@@ -165,7 +165,7 @@ func TestErrorResponse(t *testing.T) {
 	err := fmt.Errorf(errDescription)
 
 	errorResponse := Error{
-		Code: errCode,
+		Code:        errCode,
 		Description: errDescription,
 	}
 
