@@ -8,7 +8,7 @@ import (
 	"treco/storage"
 )
 
-// Data
+// Data from report
 type Data struct {
 	//DbHandler    *storage.DBHandler
 	Jira         string
@@ -16,7 +16,7 @@ type Data struct {
 	SuiteResult  SuiteResult
 }
 
-// SuiteResult
+// SuiteResult with execution summary
 type SuiteResult struct {
 	ID              uint    `gorm:"primarykey"`
 	Build           string  `gorm:"uniqueIndex:ui_suite_result"`
@@ -34,7 +34,7 @@ type SuiteResult struct {
 	ScenarioResults []*ScenarioResult
 }
 
-// ScenarioResult
+// ScenarioResult struct with execution details
 type ScenarioResult struct {
 	ID            uint    `gorm:"primarykey"`
 	ScenarioID    uint    `gorm:",not null"`
@@ -46,7 +46,7 @@ type ScenarioResult struct {
 	UpdatedAt     time.Time
 }
 
-// Scenario
+// Scenario struct with details of scenario
 type Scenario struct {
 	ID        uint      `gorm:"primarykey"`
 	Name      string    `gorm:"uniqueIndex:ui_scenario"`
@@ -57,7 +57,7 @@ type Scenario struct {
 	UpdatedAt time.Time
 }
 
-// Feature
+// Feature struct for Jiras
 type Feature struct {
 	ID        string `gorm:"primaryKey"`
 	Title     string
@@ -66,7 +66,7 @@ type Feature struct {
 	UpdatedAt time.Time
 }
 
-// Save
+// Save data to DB
 func (d *Data) Save() error {
 	dbh := storage.Handler()
 
@@ -77,11 +77,11 @@ func (d *Data) Save() error {
 
 	// Loop through scenarios
 	for _, scenarioResult := range scenarioResults {
-		featureIds := getFeaturesFromScenario(d.Jira, scenarioResult.Name)
-		features := make([]Feature, 0, len(featureIds)) //features
+		featureIDs := getFeaturesFromScenario(d.Jira, scenarioResult.Name)
+		features := make([]Feature, 0, len(featureIDs)) //features
 
-		for _, featureId := range featureIds {
-			features = append(features, Feature{ID: featureId})
+		for _, featureID := range featureIDs {
+			features = append(features, Feature{ID: featureID})
 		}
 
 		scenario := Scenario{
@@ -121,10 +121,10 @@ func writeToPostgres(db *storage.Postgres, suiteResult *SuiteResult, scenarios [
 	return db.GetDB().Create(suiteResult).Error
 }
 
-func getFeaturesFromScenario(p string, s string) []string {
-	pat := `(?i)` + p + `-\d+`
+func getFeaturesFromScenario(projectName string, scenario string) []string {
+	pat := `(?i)` + projectName + `-\d+`
 	re := regexp.MustCompile(pat)
-	matches := re.FindAllString(s, -1)
+	matches := re.FindAllString(scenario, -1)
 
 	for i := range matches {
 		matches[i] = strings.ToUpper(matches[i])

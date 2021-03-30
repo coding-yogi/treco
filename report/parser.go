@@ -7,10 +7,15 @@ import (
 	"treco/model"
 )
 
+var (
+	errInvalidReportType = "invalid report type: %v"
+)
+
 type parser interface {
 	parse(r io.Reader, result *model.Data) error
 }
 
+// Parse parses data from provided reader
 func Parse(r io.Reader, data *model.Data) error {
 	var parser parser
 	var err error
@@ -19,10 +24,10 @@ func Parse(r io.Reader, data *model.Data) error {
 
 	switch rf {
 	case "junit":
-		parser = junitXmlParser{}
+		parser = junitXMLParser{}
 		err = parser.parse(r, data)
 	default:
-		err = fmt.Errorf("invalid report type: %v " , rf)
+		err = fmt.Errorf(errInvalidReportType, rf)
 	}
 
 	return err

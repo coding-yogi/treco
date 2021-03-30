@@ -10,40 +10,47 @@ import (
 	"treco/model"
 )
 
+// Expected Execution statuses
 const (
 	PASSED  = "passed"
 	FAILED  = "failed"
 	SKIPPED = "skipped"
 )
 
-// JunitReport
+// JunitReport struct
 type JunitReport struct {
 	XMLName    xml.Name         `xml:"testsuites"`
 	TestSuites []JunitTestSuite `xml:"testsuite"`
 }
 
-// JunitTestSuite
+// JunitTestSuite struct
 type JunitTestSuite struct {
 	XMLName        xml.Name        `xml:"testsuite"`
 	Tests          uint            `xml:"tests,attr"`
 	Skipped        uint            `xml:"skipped,attr"`
 	Failures       uint            `xml:"failures,attr"`
+	Errors         uint            `xml:"errors,attr"`
 	Time           float64         `xml:"time,attr"`
 	JunitTestCases []JunitTestCase `xml:"testcase"`
 }
 
-// JunitTestCase
+// JunitTestCase stuct
 type JunitTestCase struct {
 	XMLName xml.Name  `xml:"testcase"`
 	Name    string    `xml:"name,attr"`
 	Time    float64   `xml:"time,attr"`
 	Failure *struct{} `xml:"failure,omitempty"`
 	Skipped *struct{} `xml:"skipped,omitempty"`
+	Error   *struct{} `xml:"error,omitempty"`
 }
 
-type junitXmlParser struct{}
+var (
+	errUnableToUnmarshalToJunit = "unmarshalling to junit failed"
+)
 
-func (junitXmlParser) parse(r io.Reader, result *model.Data) error {
+type junitXMLParser struct{}
+
+func (junitXMLParser) parse(r io.Reader, result *model.Data) error {
 
 	suiteResult := &result.SuiteResult
 
@@ -59,12 +66,12 @@ func (junitXmlParser) parse(r io.Reader, result *model.Data) error {
 	log.Println("unmarshalling to junit report")
 	if strings.Contains(string(b), "testsuites") {
 		if err = xml.Unmarshal(b, &jur); err != nil {
-			return err
+			return fmt.Errorf(errUnableToUnmarshalToJunit)
 		}
 	} else {
 		suite := JunitTestSuite{}
 		if err = xml.Unmarshal(b, &suite); err != nil {
-			return err
+			return fmt.Errorf(errUnableToUnmarshalToJunit)
 		}
 
 		jur.TestSuites = append(jur.TestSuites, suite)
@@ -72,14 +79,14 @@ func (junitXmlParser) parse(r io.Reader, result *model.Data) error {
 
 	for _, s := range jur.TestSuites {
 		suiteResult.TotalExecuted += s.Tests
-		suiteResult.TotalFailed += s.Failures
+		suiteResult.TotalFailed += s.Failures + s.Errors
 		suiteResult.TotalSkipped += s.Skipped
-		suiteResult.TotalPassed += s.Tests - (s.Failures + s.Skipped)
+		suiteResult.TotalPassed += s.Tests - (s.Failures + s.Skipped + s.Errors)
 		suiteResult.TimeTaken += s.Time
 
 		for _, u := range s.JunitTestCases {
 			status := PASSED
-			if u.Failure != nil {
+			if u.Failure != nil || u.Error != nil {
 				status = FAILED
 			} else if u.Skipped != nil {
 				status = SKIPPED

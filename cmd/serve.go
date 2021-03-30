@@ -11,6 +11,7 @@ import (
 	"treco/storage"
 )
 
+// Error struct having code and description
 type Error struct {
 	Code        int
 	Description string
@@ -66,12 +67,12 @@ func publishHandler(w http.ResponseWriter, r *http.Request) {
 	var rf io.Reader = reportFile
 
 	cfg := config{
-		build:        r.FormValue(strings.ToLower(BuildID)),
-		environment:  r.FormValue(strings.ToLower(Environment)),
-		jira:         r.FormValue(strings.ToLower(Jira)),
-		service:      r.FormValue(strings.ToLower(Service)),
-		reportFormat: r.FormValue(strings.ToLower(ReportFormat)),
-		testType:     r.FormValue(strings.ToLower(TestType)),
+		Build:        r.FormValue(strings.ToLower(BuildID)),
+		Environment:  r.FormValue(strings.ToLower(Environment)),
+		Jira:         r.FormValue(strings.ToLower(Jira)),
+		Service:      r.FormValue(strings.ToLower(Service)),
+		ReportFormat: r.FormValue(strings.ToLower(ReportFormat)),
+		TestType:     r.FormValue(strings.ToLower(TestType)),
 	}
 
 	// Process file
@@ -86,6 +87,8 @@ func publishHandler(w http.ResponseWriter, r *http.Request) {
 	return
 }
 
+var expectedContentType = "multipart/form-data"
+
 func validatePublishRequest(r *http.Request) (int, error) {
 	// Validate Method
 	if r.Method != "POST" {
@@ -93,7 +96,7 @@ func validatePublishRequest(r *http.Request) (int, error) {
 	}
 
 	// Validate content-type
-	expectedContentType := "multipart/form-data"
+
 	if !strings.Contains(r.Header.Get("content-type"), expectedContentType) {
 		return http.StatusBadRequest, fmt.Errorf("invalid content-type, expected: %v", expectedContentType)
 	}

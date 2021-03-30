@@ -10,6 +10,7 @@ import (
 	"treco/report"
 )
 
+// Command Line params
 const (
 	BuildID      = "CI_JOB_ID"
 	Environment  = "ENVIRONMENT"
@@ -23,13 +24,13 @@ const (
 var cfg config
 
 type config struct {
-	build        string
-	environment  string
-	jira         string
-	reportFile   string
-	reportFormat string
-	service      string
-	testType     string
+	Build        string
+	Environment  string
+	Jira         string
+	ReportFile   string
+	ReportFormat string
+	Service      string
+	TestType     string
 }
 
 var rootCmd = &cobra.Command{
@@ -37,6 +38,7 @@ var rootCmd = &cobra.Command{
 	Short: "Test Report Collector",
 }
 
+// Execute root commans
 func Execute() error {
 	return rootCmd.Execute()
 }
@@ -46,19 +48,23 @@ func init() {
 	rootCmd.AddCommand(serveCmd)
 }
 
+var (
+	validTestTypes     = [...]string{"unit", "contract", "integration", "e2e"}
+	validReportFormats = [...]string{"junit"}
+
+	errInvalidTestType      = fmt.Errorf("test type should be one of %v", validTestTypes)
+	errInvalidReportFormats = fmt.Errorf("report format should be one of %v", validReportFormats)
+)
+
 func validateParams(testType, reportType string) error {
-
-	validTestTypes := [...]string{"unit", "contract", "integration", "e2e"}
-	validReportFormats := [...]string{"junit"}
-
 	//check for valid test type
 	if !isValid(testType, validTestTypes[:]) {
-		return fmt.Errorf("test type should be one of %v", validTestTypes)
+		return errInvalidTestType
 	}
 
 	//check for valid test report format
 	if !isValid(reportType, validReportFormats[:]) {
-		return fmt.Errorf("report format should be one of %v", validReportFormats)
+		return errInvalidReportFormats
 	}
 
 	return nil
@@ -86,13 +92,13 @@ func process(cfg config, f io.Reader) error {
 
 	// Create base result
 	data := &model.Data{
-		Jira:         cfg.jira,
-		ReportFormat: cfg.reportFormat,
+		Jira:         cfg.Jira,
+		ReportFormat: cfg.ReportFormat,
 		SuiteResult: model.SuiteResult{
-			Build:       cfg.build,
-			Environment: cfg.environment,
-			Service:     strings.ToLower(cfg.service),
-			TestType:    strings.ToLower(cfg.testType),
+			Build:       cfg.Build,
+			Environment: cfg.Environment,
+			Service:     strings.ToLower(cfg.Service),
+			TestType:    strings.ToLower(cfg.TestType),
 		},
 	}
 
