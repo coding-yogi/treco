@@ -26,7 +26,7 @@ type DBHandler interface {
 }
 
 type db struct {
-	DbType   string
+	DBType   string
 	Host     string
 	Port     string
 	Name     string
@@ -51,12 +51,11 @@ func New() error {
 	log.Println("validating DB details")
 	if os.Getenv(DBType) == "" || os.Getenv(DBName) == "" || os.Getenv(DBHost) == "" || os.Getenv(DBPort) == "" ||
 		os.Getenv(DBUser) == "" || os.Getenv(DBPassword) == "" {
-
 		return errMissingDBParams
 	}
 
 	store := db{
-		DbType:   os.Getenv(DBType),
+		DBType:   os.Getenv(DBType),
 		Name:     os.Getenv(DBName),
 		Host:     os.Getenv(DBHost),
 		Port:     os.Getenv(DBPort),
@@ -66,11 +65,11 @@ func New() error {
 
 	var err error
 
-	switch strings.ToLower(store.DbType) {
+	switch strings.ToLower(store.DBType) {
 	case "postgres":
 		dbHandler, err = newPostgresDB(store)
 	default:
-		return fmt.Errorf(errStrInvalidStorageType, store.DbType)
+		return fmt.Errorf(errStrInvalidStorageType, store.DBType)
 	}
 
 	return err

@@ -2,10 +2,11 @@ package storage
 
 import (
 	"fmt"
-	"github.com/stretchr/testify/require"
-	"gorm.io/gorm"
 	"os"
 	"testing"
+
+	"github.com/stretchr/testify/require"
+	"gorm.io/gorm"
 )
 
 var dbParams = []string{DBHost, DBPort, DBUser, DBPassword, DBName, DBType}

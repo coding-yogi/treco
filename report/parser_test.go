@@ -3,9 +3,10 @@ package report
 import (
 	"bytes"
 	"fmt"
-	"github.com/stretchr/testify/require"
 	"testing"
 	"treco/model"
+
+	"github.com/stretchr/testify/require"
 )
 
 func TestInvalidReportFormat(t *testing.T) {

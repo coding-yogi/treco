@@ -2,12 +2,13 @@ package cmd
 
 import (
 	"fmt"
-	"github.com/spf13/cobra"
 	"io"
 	"log"
 	"strings"
 	"treco/model"
 	"treco/report"
+
+	"github.com/spf13/cobra"
 )
 
 // Command Line params

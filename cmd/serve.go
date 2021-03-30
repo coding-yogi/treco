@@ -3,12 +3,13 @@ package cmd
 import (
 	"encoding/json"
 	"fmt"
-	"github.com/spf13/cobra"
 	"io"
 	"log"
 	"net/http"
 	"strings"
 	"treco/storage"
+
+	"github.com/spf13/cobra"
 )
 
 // Error struct having code and description
@@ -34,14 +35,14 @@ func init() {
 }
 
 func startServer() {
-	var err error
-
 	// Connect to storage
-	err = storage.New()
+	var err = storage.New()
 	exitOnError(err)
 
 	handler := storage.Handler()
-	defer (*handler).Close()
+	defer func() {
+		_ = (*handler).Close()
+	}()
 
 	// Define http handler
 	http.HandleFunc("/treco/v1/publish/report", publishHandler)
@@ -63,7 +64,10 @@ func publishHandler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	defer reportFile.Close()
+	defer func() {
+		_ = reportFile.Close()
+	}()
+
 	var rf io.Reader = reportFile
 
 	cfg := config{
@@ -84,7 +88,6 @@ func publishHandler(w http.ResponseWriter, r *http.Request) {
 
 	log.Println("results uploaded successfully")
 	w.WriteHeader(http.StatusOK)
-	return
 }
 
 var expectedContentType = "multipart/form-data"
@@ -134,5 +137,5 @@ func sendErrorResponse(w http.ResponseWriter, err error, description string, cod
 
 	w.Header().Set("content-type", "application/json")
 	w.WriteHeader(http.StatusBadRequest)
-	w.Write(b)
+	_, _ = w.Write(b)
 }

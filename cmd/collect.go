@@ -2,11 +2,12 @@ package cmd
 
 import (
 	"fmt"
-	"github.com/spf13/cobra"
 	"io"
 	"log"
 	"os"
 	"treco/storage"
+
+	"github.com/spf13/cobra"
 )
 
 var collectCmd = &cobra.Command{
@@ -20,7 +21,9 @@ var collectCmd = &cobra.Command{
 		exitOnError(err)
 
 		handler := storage.Handler()
-		defer (*handler).Close()
+		defer func() {
+			_ = (*handler).Close()
+		}()
 
 		//validate flags
 		err = validateFlags(cfg)
@@ -29,7 +32,9 @@ var collectCmd = &cobra.Command{
 		//check for report file
 		reportFile, err := os.OpenFile(cfg.ReportFile, os.O_RDONLY, 0644)
 		exitOnError(err)
-		defer reportFile.Close()
+		defer func() {
+			_ = reportFile.Close()
+		}()
 
 		// Process file
 		var rf io.Reader = reportFile

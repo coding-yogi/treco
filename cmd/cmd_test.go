@@ -2,12 +2,13 @@ package cmd
 
 import (
 	"fmt"
-	"github.com/stretchr/testify/require"
 	"net/http"
 	"net/url"
 	"reflect"
 	"strings"
 	"testing"
+
+	"github.com/stretchr/testify/require"
 )
 
 func TestMissingFlags(t *testing.T) {
@@ -83,7 +84,8 @@ func TestInvalidHttpRequest(t *testing.T) {
 	}
 
 	for _, data := range requestData {
-		t.Run(data.testName, func(t *testing.T) {
+		testName := data.testName
+		t.Run(testName, func(t *testing.T) {
 			status, err := validatePublishRequest(data.request)
 			require.Error(t, err)
 			require.Equal(t, data.err, err)

@@ -1,11 +1,12 @@
 package model
 
 import (
-	"gorm.io/gorm/clause"
 	"regexp"
 	"strings"
 	"time"
 	"treco/storage"
+
+	"gorm.io/gorm/clause"
 )
 
 // Data from report
