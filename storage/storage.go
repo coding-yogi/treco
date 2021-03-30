@@ -1,3 +1,6 @@
+/*
+Package storage handles persistent storage of report metrics
+*/
 package storage
 
 import (
@@ -41,7 +44,7 @@ func Handler() *DBHandler {
 
 var (
 	errMissingDBParams = fmt.Errorf("missing db details, please set below environment variables: "+
-		"%v, %v, %v, %v, %v, %v\n", DBType, DBName, DBHost, DBPort, DBUser, DBPassword)
+		"%v, %v, %v, %v, %v, %v", DBType, DBName, DBHost, DBPort, DBUser, DBPassword)
 
 	errStrInvalidStorageType = "storage type %v not supported, please check value of DB_TYPE in environment variables"
 )

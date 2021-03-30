@@ -1,3 +1,6 @@
+/*
+Package model defines DAO
+*/
 package model
 
 import (
@@ -106,7 +109,6 @@ func saveToDB(dbh *storage.DBHandler, suiteResult *SuiteResult, scenarios []Scen
 }
 
 func writeToPostgres(db *storage.Postgres, suiteResult *SuiteResult, scenarios []Scenario) error {
-
 	// Insert scenarios
 	if err := db.GetDB().Clauses(clause.OnConflict{
 		Columns:   []clause.Column{{Name: "name"}, {Name: "test_type"}, {Name: "service"}},

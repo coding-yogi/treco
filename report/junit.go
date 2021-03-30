@@ -51,7 +51,6 @@ var (
 type junitXMLParser struct{}
 
 func (junitXMLParser) parse(r io.Reader, result *model.Data) error {
-
 	suiteResult := &result.SuiteResult
 
 	log.Println("reading report file")

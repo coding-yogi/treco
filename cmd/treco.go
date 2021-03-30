@@ -1,3 +1,6 @@
+/*
+Package cmd runs tool as command line util
+*/
 package cmd
 
 import (

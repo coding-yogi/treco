@@ -107,9 +107,9 @@ func validatePublishRequest(r *http.Request) (int, error) {
 	// Validate parameters
 	missingParams := make([]string, 0, len(requiredParams))
 	for _, param := range requiredParams {
-		param := strings.ToLower(param)
-		if r.FormValue(param) == "" {
-			missingParams = append(missingParams, param)
+		lparam := strings.ToLower(param)
+		if r.FormValue(lparam) == "" {
+			missingParams = append(missingParams, lparam)
 		}
 	}
 
