@@ -7,6 +7,7 @@ import (
 	"strings"
 	"treco/model"
 	"treco/report"
+	"treco/storage"
 
 	"github.com/spf13/cobra"
 )
@@ -110,7 +111,8 @@ func process(cfg config, f io.Reader) error {
 	}
 
 	// Write to storage
-	err = data.Save()
+	dbh := storage.Handler()
+	err = data.Save(dbh)
 	if err != nil {
 		return err
 	}

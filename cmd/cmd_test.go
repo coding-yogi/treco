@@ -1,8 +1,10 @@
 package cmd
 
 import (
+	"encoding/json"
 	"fmt"
 	"net/http"
+	"net/http/httptest"
 	"net/url"
 	"reflect"
 	"strings"
@@ -11,36 +13,40 @@ import (
 	"github.com/stretchr/testify/require"
 )
 
+var testConfig = config{
+	Build:        "Test",
+	Environment:  "dev",
+	Jira:         "DAKOTA",
+	ReportFile:   "../junit.xml",
+	ReportFormat: "junit",
+	Service:      "treco",
+	TestType:     "unit",
+}
+
 func TestMissingFlags(t *testing.T) {
-
-	cfg := config{
-		Build:        "Test",
-		Environment:  "dev",
-		Jira:         "DAKOTA-000",
-		ReportFile:   "../junit.xml",
-		ReportFormat: "junit",
-		Service:      "treco",
-		TestType:     "unit",
-	}
-
-	configValue := reflect.ValueOf(&cfg).Elem()
+	configValue := reflect.ValueOf(&testConfig).Elem()
 	configType := configValue.Type()
 
 	for fieldIdx := 0; fieldIdx < configValue.NumField(); fieldIdx++ {
 		field := configValue.Field(fieldIdx)
 		fieldName := configType.Field(fieldIdx).Name
 
-		t.Run(fieldName, func(t *testing.T) {
-			currentFieldValue := field.String()
-			field.SetString("") //Set each field to empty
+		currentFieldValue := field.String()
+		field.SetString("") //Set each field to empty
 
-			err := validateFlags(cfg)
+		t.Run(fieldName, func(t *testing.T) {
+			err := validateFlags(testConfig)
 			require.Error(t, err, "no error returned for field "+fieldName)
 			require.Equal(t, errMissingArguments, err)
-
-			field.SetString(currentFieldValue) //Reset field
 		})
+
+		field.SetString(currentFieldValue) //Reset field
 	}
+}
+
+func TestValidFlags(t *testing.T) {
+	err := validateFlags(testConfig)
+	require.NoError(t, err)
 }
 
 func TestInvalidHttpRequest(t *testing.T) {
@@ -150,4 +156,23 @@ func TestValidParams(t *testing.T) {
 		err := validateParams(testType, validReportFormats[0])
 		require.NoError(t, err)
 	}
+}
+
+func TestErrorResponse(t *testing.T) {
+	resRecorder := httptest.NewRecorder()
+	errDescription := "some error occured"
+	errCode := 400
+	err := fmt.Errorf(errDescription)
+
+	errorResponse := Error{
+		Code: errCode,
+		Description: errDescription,
+	}
+
+	body, _ := json.Marshal(errorResponse)
+
+	sendErrorResponse(resRecorder, err, errDescription, errCode)
+	require.Equal(t, errCode, resRecorder.Code)
+	require.Equal(t, "application/json", resRecorder.Header().Get("content-type"))
+	require.Equal(t, body, resRecorder.Body.Bytes())
 }

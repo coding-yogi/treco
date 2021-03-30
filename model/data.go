@@ -68,9 +68,7 @@ type Feature struct {
 }
 
 // Save data to DB
-func (d *Data) Save() error {
-	dbh := storage.Handler()
-
+func (d *Data) Save(dbh *storage.DBHandler) error {
 	suiteResult := &d.SuiteResult
 	scenarioResults := suiteResult.ScenarioResults
 
@@ -95,6 +93,10 @@ func (d *Data) Save() error {
 		scenarios = append(scenarios, scenario)
 	}
 
+	return saveToDB(dbh, suiteResult, scenarios)
+}
+
+func saveToDB(dbh *storage.DBHandler, suiteResult *SuiteResult, scenarios []Scenario) error {
 	switch db := (*dbh).(type) {
 	case storage.Postgres:
 		return writeToPostgres(&db, suiteResult, scenarios)

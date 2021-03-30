@@ -43,7 +43,7 @@ func TestInvalidDBType(t *testing.T) {
 	require.Equal(t, fmt.Errorf(errStrInvalidStorageType, os.Getenv(DBType)), err)
 }
 
-func TestValidPostgresDB(t *testing.T) {
+func TestValidPostgresDBType(t *testing.T) {
 	//Set data
 	_ = os.Setenv(DBHost, "localhost")
 	_ = os.Setenv(DBUser, "some_user")
@@ -82,4 +82,9 @@ func TestInvalidPostgresDBConnection(t *testing.T) {
 	require.Error(t, err)
 	require.Contains(t, err.Error(), "dial error")
 	require.Equal(t, Postgres{}, dbHandler)
+}
+
+func TestGetHandler(t *testing.T) {
+	handler := Handler()
+	require.IsType(t, (*DBHandler)(nil), handler)
 }
