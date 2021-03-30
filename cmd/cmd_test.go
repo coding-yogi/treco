@@ -122,6 +122,7 @@ func TestValidHttpRequest(t *testing.T) {
 	require.Equal(t, 0, status)
 }
 
+//nolint: scopelint
 func TestInvalidParams(t *testing.T) {
 	testData := []struct {
 		testName   string

@@ -30,7 +30,7 @@ var collectCmd = &cobra.Command{
 		exitOnError(err)
 
 		//check for report file
-		reportFile, err := os.OpenFile(cfg.ReportFile, os.O_RDONLY, 0644)
+		reportFile, err := os.OpenFile(cfg.ReportFile, os.O_RDONLY, 0600)
 		exitOnError(err)
 		defer func() {
 			_ = reportFile.Close()

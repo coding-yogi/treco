@@ -70,7 +70,7 @@ func publishHandler(w http.ResponseWriter, r *http.Request) {
 
 	var rf io.Reader = reportFile
 
-	cfg := config{
+	cfg = config{
 		Build:        r.FormValue(strings.ToLower(BuildID)),
 		Environment:  r.FormValue(strings.ToLower(Environment)),
 		Jira:         r.FormValue(strings.ToLower(Jira)),
