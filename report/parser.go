@@ -14,6 +14,7 @@ var (
 	errInvalidReportType = "invalid report type: %v"
 )
 
+// Parser interface
 type Parser interface {
 	parse(r io.Reader, result *model.Data) error
 }

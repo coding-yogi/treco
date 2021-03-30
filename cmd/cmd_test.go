@@ -49,6 +49,7 @@ func TestValidFlags(t *testing.T) {
 	require.NoError(t, err)
 }
 
+//nolint: scopelint
 func TestInvalidHttpRequest(t *testing.T) {
 	requestData := []struct {
 		testName string
