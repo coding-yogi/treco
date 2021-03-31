@@ -1,11 +1,13 @@
 package cmd
 
 import (
+	"bytes"
 	"encoding/json"
 	"fmt"
+	"io"
+	"mime/multipart"
 	"net/http"
 	"net/http/httptest"
-	"net/url"
 	"reflect"
 	"strings"
 	"testing"
@@ -17,13 +19,69 @@ var testConfig = config{
 	Build:        "Test",
 	Environment:  "dev",
 	Jira:         "DAKOTA",
-	ReportFile:   "../junit.xml",
+	ReportFile:   "some_file.xml",
 	ReportFormat: "junit",
 	Service:      "treco",
 	TestType:     "unit",
 }
 
-func TestMissingFlags(t *testing.T) {
+var testRequestParams = map[string]string{
+	strings.ToLower(BuildID):      "test",
+	strings.ToLower(Environment):  "dev",
+	strings.ToLower(Jira):         "DAKOTA",
+	strings.ToLower(ReportFormat): "junit",
+	strings.ToLower(Service):      "test_service",
+	strings.ToLower(TestType):     "unit",
+}
+
+var validRequest = http.Request{
+	Method: "POST",
+	Header: map[string][]string{
+		"Content-Type": {expectedContentType},
+	},
+	MultipartForm: &multipart.Form{
+		Value: map[string][]string{
+			strings.ToLower(BuildID):      {"test"},
+			strings.ToLower(Environment):  {"dev"},
+			strings.ToLower(Jira):         {"DAKOTA-007"},
+			strings.ToLower(ReportFormat): {"junit"},
+			strings.ToLower(Service):      {"test_service"},
+			strings.ToLower(TestType):     {"unit"},
+		},
+		File: map[string][]*multipart.FileHeader{
+			strings.ToLower(ReportFile): {
+				{
+					Filename: "",
+					Header:   nil,
+					Size:     0,
+				},
+			},
+		},
+	},
+}
+
+var testFileContent = `
+	<?xml version="1.0" encoding="UTF-8"?>
+	<testsuite skipped="1" hostname="testHost" name="dakota.app.ui.tests.TestsForOnboarding" tests="5" failures="1" timestamp="2021-03-23T19:25:34 SGT" time="6.286" errors="1">
+		<testcase name="test_with_error" time="6.286" classname="some.test.Class">
+		<error type="org.openqa.selenium.WebDriverException" message="org.openqa.selenium.WebDriverException: An unknown server-side error occurred">
+			<![CDATA[org.openqa.selenium.WebDriverException: org.openqa.selenium.WebDriverException: An unknown server-side error occurred while processing the command. Original error: Cannot rewrite element locator 'get_started_button' to its complete form, because the current application package name is unknown. Consider providing the app package name or changing the locator to '<package_name>:id/get_started_button' format.
+			]]>
+		</error>
+		</testcase> 
+		<system-out/>
+		<testcase name="test_skipped" time="0.0" classname="some.test.Class">
+			<skipped/>
+		</testcase> 
+		<testcase name="test_failed" time="2.123" classname="some.test.Class">
+			<failed/>
+		</testcase> 
+		<testcase name="test_passed_1" time="1.987" classname="some.test.Class"/>
+		<testcase name="test_passed_2" time="3.14" classname="some.test.Class"/>
+	</testsuite> 
+	`
+
+func TestValidateFlagsWithMissingFlags(t *testing.T) {
 	configValue := reflect.ValueOf(&testConfig).Elem()
 	configType := configValue.Type()
 
@@ -44,86 +102,20 @@ func TestMissingFlags(t *testing.T) {
 	}
 }
 
-func TestValidFlags(t *testing.T) {
+func TestValidateFlagsWithValidFlags(t *testing.T) {
 	err := validateFlags(testConfig)
 	require.NoError(t, err)
 }
 
-//nolint: scopelint
-func TestInvalidHttpRequest(t *testing.T) {
-	requestData := []struct {
-		testName string
-		request  *http.Request
-		err      error
-		status   int
-	}{
-		{
-			testName: "method other that POST",
-			request: &http.Request{
-				Method: "GET",
-				Header: map[string][]string{},
-			},
-			err:    fmt.Errorf(""),
-			status: http.StatusMethodNotAllowed,
-		},
-		{
-			testName: "content-type other than multipart/form-data",
-			request: &http.Request{
-				Method: "POST",
-				Header: map[string][]string{
-					"Content-Type": {"application/json"},
-				},
-			},
-			err:    fmt.Errorf("invalid content-type, expected: %v", expectedContentType),
-			status: http.StatusBadRequest,
-		},
-		{
-			testName: "missing request params",
-			request: &http.Request{
-				Method: "POST",
-				Header: map[string][]string{
-					"Content-Type": {expectedContentType},
-				},
-			},
-			err:    fmt.Errorf("missing params: %v", strings.ToLower(strings.Join(requiredParams[:], ", "))),
-			status: http.StatusBadRequest,
-		},
-	}
-
-	for _, data := range requestData {
-		testName := data.testName
-		t.Run(testName, func(t *testing.T) {
-			status, err := validatePublishRequest(data.request)
-			require.Error(t, err)
-			require.Equal(t, data.err, err)
-			require.Equal(t, data.status, status)
-		})
-	}
-}
-
-func TestValidHttpRequest(t *testing.T) {
-	requestData := &http.Request{
-		Method: "POST",
-		Header: map[string][]string{
-			"Content-Type": {expectedContentType},
-		},
-		Form: url.Values{
-			strings.ToLower(BuildID):      {"test"},
-			strings.ToLower(Environment):  {"dev"},
-			strings.ToLower(Jira):         {"DAKOTA-007"},
-			strings.ToLower(ReportFormat): {"junit"},
-			strings.ToLower(Service):      {"test_service"},
-			strings.ToLower(TestType):     {"unit"},
-		},
-	}
-
-	status, err := validatePublishRequest(requestData)
+func TestValidatePublishRequestWithValidData(t *testing.T) {
+	requestData := validRequest
+	status, err := validatePublishRequest(&requestData)
 	require.NoError(t, err)
 	require.Equal(t, 0, status)
 }
 
 //nolint: scopelint
-func TestInvalidParams(t *testing.T) {
+func TestValidateParamsWithInvalidParams(t *testing.T) {
 	testData := []struct {
 		testName   string
 		testType   string
@@ -153,7 +145,7 @@ func TestInvalidParams(t *testing.T) {
 	}
 }
 
-func TestValidParams(t *testing.T) {
+func TestValidateParamsValidParams(t *testing.T) {
 	for _, testType := range validTestTypes {
 		err := validateParams(testType, validReportFormats[0])
 		require.NoError(t, err)
@@ -177,4 +169,154 @@ func TestErrorResponse(t *testing.T) {
 	require.Equal(t, errCode, resRecorder.Code)
 	require.Equal(t, "application/json", resRecorder.Header().Get("content-type"))
 	require.Equal(t, body, resRecorder.Body.Bytes())
+}
+
+//nolint: scopelint
+func TestPublishHandlerWithInvalidData(t *testing.T) {
+	type testData struct {
+		testName string
+		request  *http.Request
+		resErr   Error
+	}
+
+	type feederFunc func() testData
+
+	feeder := []feederFunc{
+		func() testData {
+			request, err := createTestHttpRequest("GET", "multipart/form-data",
+				testRequestParams, testFileContent)
+			require.NoError(t, err)
+
+			return testData{
+				testName: "method other that POST",
+				request:  request,
+				resErr: Error{
+					Code:        http.StatusMethodNotAllowed,
+					Description: "",
+				},
+			}
+		},
+		func() testData {
+			request, err := createTestHttpRequest("POST", "application/json",
+				testRequestParams, testFileContent)
+			require.NoError(t, err)
+
+			return testData{
+				testName: "content-type other than multipart/form-data",
+				request:  request,
+				resErr: Error{
+					Code:        http.StatusBadRequest,
+					Description: fmt.Sprintf("invalid content-type, expected: %v", expectedContentType),
+				},
+			}
+		},
+		func() testData {
+			request, err := createTestHttpRequest("POST", "multipart/form-data",
+				map[string]string{}, testFileContent)
+			require.NoError(t, err)
+
+			return testData{
+				testName: "missing request params",
+				request:  request,
+				resErr: Error{
+					Code:        http.StatusBadRequest,
+					Description: fmt.Sprintf("missing params: %v", strings.ToLower(strings.Join(requiredParams[:], ", "))),
+				},
+			}
+		},
+		func() testData {
+			requestParams := make(map[string]string)
+			for k, v := range testRequestParams {
+				requestParams[k] = v
+			}
+
+			requestParams[strings.ToLower(TestType)] = "unknown"
+			request, err := createTestHttpRequest("POST", "multipart/form-data",
+				requestParams, testFileContent)
+			require.NoError(t, err)
+
+			return testData{
+				testName: "invalid params",
+				request:  request,
+				resErr: Error{
+					Code:        http.StatusBadRequest,
+					Description: errInvalidTestType.Error(),
+				},
+			}
+		},
+		func() testData {
+			request, err := createTestHttpRequest("POST", "multipart/form-data",
+				testRequestParams, "some invalid text format")
+			require.NoError(t, err)
+
+			return testData{
+				testName: "invalid file contents",
+				request:  request,
+				resErr: Error{
+					Code:        http.StatusInternalServerError,
+					Description: "unable to process the request",
+				},
+			}
+		},
+	}
+
+	for _, feederFun := range feeder {
+		data := feederFun()
+		t.Run(data.testName, func(t *testing.T) {
+			resRecorder := httptest.NewRecorder()
+			publishHandler(resRecorder, data.request)
+
+			body, _ := json.Marshal(data.resErr)
+
+			require.Equal(t, data.resErr.Code, resRecorder.Code)
+			require.Equal(t, "application/json", resRecorder.Header().Get("content-type"))
+			require.Equal(t, string(body), resRecorder.Body.String())
+		})
+	}
+}
+
+/*func TestPublishHandlerWithValidRequest(t *testing.T) {
+	req = createTestHttpRequest()
+	res := httptest.NewRecorder()
+	publishHandler(res, req)
+}*/
+
+func createTestHttpRequest(method, contentType string, params map[string]string, fileContents string) (*http.Request, error) {
+	body := &bytes.Buffer{}
+	writer := multipart.NewWriter(body)
+
+	//Write text params
+	for k, v := range params {
+		err := writer.WriteField(k, v)
+		if err != nil {
+			return &http.Request{}, err
+		}
+	}
+
+	//Add file to multipart data
+	part, _ := writer.CreateFormFile(strings.ToLower(ReportFile), "some_file.xml")
+	_, err := io.Copy(part, bytes.NewReader([]byte(fileContents)))
+	if err != nil {
+		return &http.Request{}, err
+	}
+
+	//Close writer
+	err = writer.Close()
+	if err != nil {
+		return &http.Request{}, err
+	}
+
+	//Create request
+	req := httptest.NewRequest(method, "/treco/v1/publish/report", body)
+	if contentType == "multipart/form-data" {
+		req.Header.Set("Content-Type", writer.FormDataContentType())
+		err = req.ParseMultipartForm(10 << 20)
+		if err != nil {
+			return &http.Request{}, err
+		}
+	} else {
+		req.Header.Set("Content-Type", contentType)
+	}
+
+	return req, err
 }

@@ -53,6 +53,7 @@ func TestValidPostgresDBType(t *testing.T) {
 	_ = os.Setenv(DBType, "postgres")
 
 	//Mock
+	connectToDB := connectToPostgresDB
 	connectToPostgresDB = func(dsn string) (*gorm.DB, error) {
 		return &gorm.DB{}, nil
 	}

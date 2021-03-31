@@ -33,9 +33,7 @@ func (p Postgres) Close() error {
 	return db.Close()
 }
 
-var connectToPostgresDB = connectToDB
-
-func connectToDB(dsn string) (*gorm.DB, error) {
+var connectToPostgresDB = func(dsn string) (*gorm.DB, error) {
 	return gorm.Open(postgres.Open(dsn), &gorm.Config{})
 }
 

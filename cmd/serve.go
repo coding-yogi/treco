@@ -21,6 +21,8 @@ type Error struct {
 var port int
 var requiredParams = [...]string{BuildID, Environment, Jira, ReportFormat, Service, TestType}
 
+const expectedContentType = "multipart/form-data"
+
 var serveCmd = &cobra.Command{
 	Use:   "serve",
 	Short: "Runs as a web server",
@@ -57,18 +59,24 @@ func publishHandler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	// Read file from report_file
-	reportFile, _, err := r.FormFile(strings.ToLower(ReportFile))
+	rf, err := readFileFromRequest(r)
 	if err != nil {
 		sendErrorResponse(w, err, "unable to retrieve report file", http.StatusBadRequest)
 		return
 	}
 
-	defer func() {
-		_ = reportFile.Close()
-	}()
+	/*	// Read file from report_file
+		reportFile, _, err := r.FormFile(strings.ToLower(ReportFile))
+		if err != nil {
+			sendErrorResponse(w, err, "unable to retrieve report file", http.StatusBadRequest)
+			return
+		}
 
-	var rf io.Reader = reportFile
+		defer func() {
+			_ = reportFile.Close()
+		}()
+
+		var rf io.Reader = reportFile*/
 
 	cfg = config{
 		Build:        r.FormValue(strings.ToLower(BuildID)),
@@ -90,7 +98,18 @@ func publishHandler(w http.ResponseWriter, r *http.Request) {
 	w.WriteHeader(http.StatusOK)
 }
 
-var expectedContentType = "multipart/form-data"
+func readFileFromRequest(r *http.Request) (io.Reader, error) {
+	reportFile, _, err := r.FormFile(strings.ToLower(ReportFile))
+	if err != nil {
+		return nil, err
+	}
+
+	defer func() {
+		_ = reportFile.Close()
+	}()
+
+	return reportFile, nil
+}
 
 func validatePublishRequest(r *http.Request) (int, error) {
 	// Validate Method
@@ -99,7 +118,6 @@ func validatePublishRequest(r *http.Request) (int, error) {
 	}
 
 	// Validate content-type
-
 	if !strings.Contains(r.Header.Get("content-type"), expectedContentType) {
 		return http.StatusBadRequest, fmt.Errorf("invalid content-type, expected: %v", expectedContentType)
 	}
@@ -136,6 +154,6 @@ func sendErrorResponse(w http.ResponseWriter, err error, description string, cod
 	})
 
 	w.Header().Set("content-type", "application/json")
-	w.WriteHeader(http.StatusBadRequest)
+	w.WriteHeader(code)
 	_, _ = w.Write(b)
 }
