@@ -65,19 +65,6 @@ func publishHandler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	/*	// Read file from report_file
-		reportFile, _, err := r.FormFile(strings.ToLower(ReportFile))
-		if err != nil {
-			sendErrorResponse(w, err, "unable to retrieve report file", http.StatusBadRequest)
-			return
-		}
-
-		defer func() {
-			_ = reportFile.Close()
-		}()
-
-		var rf io.Reader = reportFile*/
-
 	cfg = config{
 		Build:        r.FormValue(strings.ToLower(BuildID)),
 		Environment:  r.FormValue(strings.ToLower(Environment)),

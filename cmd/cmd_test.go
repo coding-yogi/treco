@@ -34,32 +34,6 @@ var testRequestParams = map[string]string{
 	strings.ToLower(TestType):     "unit",
 }
 
-var validRequest = http.Request{
-	Method: "POST",
-	Header: map[string][]string{
-		"Content-Type": {expectedContentType},
-	},
-	MultipartForm: &multipart.Form{
-		Value: map[string][]string{
-			strings.ToLower(BuildID):      {"test"},
-			strings.ToLower(Environment):  {"dev"},
-			strings.ToLower(Jira):         {"DAKOTA-007"},
-			strings.ToLower(ReportFormat): {"junit"},
-			strings.ToLower(Service):      {"test_service"},
-			strings.ToLower(TestType):     {"unit"},
-		},
-		File: map[string][]*multipart.FileHeader{
-			strings.ToLower(ReportFile): {
-				{
-					Filename: "",
-					Header:   nil,
-					Size:     0,
-				},
-			},
-		},
-	},
-}
-
 var testFileContent = `
 	<?xml version="1.0" encoding="UTF-8"?>
 	<testsuite skipped="1" hostname="testHost" name="dakota.app.ui.tests.TestsForOnboarding" tests="5" failures="1" timestamp="2021-03-23T19:25:34 SGT" time="6.286" errors="1">
@@ -105,13 +79,6 @@ func TestValidateFlagsWithMissingFlags(t *testing.T) {
 func TestValidateFlagsWithValidFlags(t *testing.T) {
 	err := validateFlags(testConfig)
 	require.NoError(t, err)
-}
-
-func TestValidatePublishRequestWithValidData(t *testing.T) {
-	requestData := validRequest
-	status, err := validatePublishRequest(&requestData)
-	require.NoError(t, err)
-	require.Equal(t, 0, status)
 }
 
 //nolint: scopelint
@@ -183,7 +150,7 @@ func TestPublishHandlerWithInvalidData(t *testing.T) {
 
 	feeder := []feederFunc{
 		func() testData {
-			request, err := createTestHttpRequest("GET", "multipart/form-data",
+			request, err := createTestHTTPRequest("GET", "multipart/form-data",
 				testRequestParams, testFileContent)
 			require.NoError(t, err)
 
@@ -197,7 +164,7 @@ func TestPublishHandlerWithInvalidData(t *testing.T) {
 			}
 		},
 		func() testData {
-			request, err := createTestHttpRequest("POST", "application/json",
+			request, err := createTestHTTPRequest("POST", "application/json",
 				testRequestParams, testFileContent)
 			require.NoError(t, err)
 
@@ -211,7 +178,7 @@ func TestPublishHandlerWithInvalidData(t *testing.T) {
 			}
 		},
 		func() testData {
-			request, err := createTestHttpRequest("POST", "multipart/form-data",
+			request, err := createTestHTTPRequest("POST", "multipart/form-data",
 				map[string]string{}, testFileContent)
 			require.NoError(t, err)
 
@@ -231,7 +198,7 @@ func TestPublishHandlerWithInvalidData(t *testing.T) {
 			}
 
 			requestParams[strings.ToLower(TestType)] = "unknown"
-			request, err := createTestHttpRequest("POST", "multipart/form-data",
+			request, err := createTestHTTPRequest("POST", "multipart/form-data",
 				requestParams, testFileContent)
 			require.NoError(t, err)
 
@@ -245,7 +212,7 @@ func TestPublishHandlerWithInvalidData(t *testing.T) {
 			}
 		},
 		func() testData {
-			request, err := createTestHttpRequest("POST", "multipart/form-data",
+			request, err := createTestHTTPRequest("POST", "multipart/form-data",
 				testRequestParams, "some invalid text format")
 			require.NoError(t, err)
 
@@ -275,13 +242,17 @@ func TestPublishHandlerWithInvalidData(t *testing.T) {
 	}
 }
 
-/*func TestPublishHandlerWithValidRequest(t *testing.T) {
-	req = createTestHttpRequest()
+func TestPublishHandlerWithValidRequest(t *testing.T) {
+	req, err := createTestHTTPRequest("POST", "multipart/form-data", testRequestParams, testFileContent)
+	require.NoError(t, err)
+
 	res := httptest.NewRecorder()
 	publishHandler(res, req)
-}*/
 
-func createTestHttpRequest(method, contentType string, params map[string]string, fileContents string) (*http.Request, error) {
+	require.Equal(t, http.StatusOK, res.Code)
+}
+
+func createTestHTTPRequest(method, contentType string, params map[string]string, fileContents string) (*http.Request, error) {
 	body := &bytes.Buffer{}
 	writer := multipart.NewWriter(body)
 
