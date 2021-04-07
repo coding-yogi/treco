@@ -1,5 +1,7 @@
 package main
 
+import "treco/cmd/cli"
+
 func main() {
-	_ = rootCmd.Execute()
+	_ = cli.Execute()
 }

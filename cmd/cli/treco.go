@@ -1,7 +1,7 @@
 /*
-Package cmd runs tool as command line util
+Package main runs tool as command line util
 */
-package main
+package cli
 
 import (
 	"fmt"
@@ -46,6 +46,11 @@ var rootCmd = &cobra.Command{
 func init() {
 	rootCmd.AddCommand(collectCmd)
 	rootCmd.AddCommand(serveCmd)
+}
+
+//Execute ...
+func Execute() error {
+	return rootCmd.Execute()
 }
 
 var (
