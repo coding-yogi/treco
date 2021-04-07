@@ -46,6 +46,7 @@ type ScenarioResult struct {
 	Name          string  `gorm:"-"`
 	Status        string  `gorm:",not null"`
 	TimeTaken     float64 `gorm:"default:0"`
+	Features      []string
 	CreatedAt     time.Time
 	UpdatedAt     time.Time
 }
@@ -79,21 +80,12 @@ func (d *Data) Save(dbh *storage.DBHandler) error {
 
 	// Loop through scenarios
 	for _, scenarioResult := range scenarioResults {
-		featureIDs := getFeaturesFromScenario(d.Jira, scenarioResult.Name)
-		features := make([]Feature, 0, len(featureIDs)) //features
-
-		for _, featureID := range featureIDs {
-			features = append(features, Feature{ID: featureID})
-		}
-
-		scenario := Scenario{
+		scenarios = append(scenarios, Scenario{
 			Name:     scenarioResult.Name,
 			TestType: d.SuiteResult.TestType,
 			Service:  d.SuiteResult.Service,
-			Features: features,
-		}
-
-		scenarios = append(scenarios, scenario)
+			Features: getFeaturesFromScenarioResult(d.Jira, *scenarioResult),
+		})
 	}
 
 	return saveToDB(dbh, suiteResult, scenarios)
@@ -122,18 +114,34 @@ func writeToPostgres(db *storage.Postgres, suiteResult *SuiteResult, scenarios [
 		scenarioResult.ScenarioID = scenarios[i].ID
 	}
 
-	// Insert scenarios
+	// Insert suiteResults
 	return db.GetDB().Create(suiteResult).Error
 }
 
-func getFeaturesFromScenario(projectName string, scenario string) []string {
+func getFeaturesFromScenarioName(projectName string, scenario string) []Feature {
 	pat := `(?i)` + projectName + `-\d+`
 	re := regexp.MustCompile(pat)
 	matches := re.FindAllString(scenario, -1)
 
+	features := make([]Feature, 0, len(matches))
+
 	for i := range matches {
-		matches[i] = strings.ToUpper(matches[i])
+		features = append(features, Feature{ID: strings.ToUpper(matches[i])})
 	}
 
-	return matches
+	return features
+}
+
+func getFeaturesFromScenarioResult(projectName string, r ScenarioResult) []Feature {
+	pat := `(?i)` + projectName + `-\d+`
+	re := regexp.MustCompile(pat)
+	features := make([]Feature, 0, len(r.Features))
+	for _, f := range r.Features {
+		f = strings.ToUpper(f)
+		if re.MatchString(f) {
+			features = append(features, Feature{ID: strings.ToUpper(f)})
+		}
+	}
+
+	return features
 }

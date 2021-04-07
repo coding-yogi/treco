@@ -33,39 +33,105 @@ func TestDataSave(t *testing.T) {
 	require.NoError(t, err)
 }
 
-func TestGetFeaturesFromScenario(t *testing.T) {
+func TestGetFeaturesFromScenarioName(t *testing.T) {
 	dataSet := []struct {
 		projectName       string
 		scenarioName      string
-		featuresExtracted []string
+		featuresExtracted []Feature
 	}{
 		{
-			projectName:       "dakota",
-			scenarioName:      "some test (Dakota-123)",
-			featuresExtracted: []string{"DAKOTA-123"},
+			projectName:  "dakota",
+			scenarioName: "some test (Dakota-123)",
+			featuresExtracted: []Feature{
+				{
+					ID: "DAKOTA-123",
+				},
+			},
 		}, {
-			projectName:       "Dakota",
-			scenarioName:      "Dakota-456 some test (Dakota-123)",
-			featuresExtracted: []string{"DAKOTA-456", "DAKOTA-123"},
+			projectName:  "Dakota",
+			scenarioName: "Dakota-456 some test (Dakota-123)",
+			featuresExtracted: []Feature{
+				{
+					ID: "DAKOTA-456",
+				}, {
+					ID: "DAKOTA-123",
+				},
+			},
 		}, {
-			projectName:       "DAKOTA",
-			scenarioName:      "Dakota-456 some test (Dakota-123)",
-			featuresExtracted: []string{"DAKOTA-456", "DAKOTA-123"},
+			projectName:  "DAKOTA",
+			scenarioName: "Dakota-456 some test (Dakota-123)",
+			featuresExtracted: []Feature{
+				{
+					ID: "DAKOTA-456",
+				}, {
+					ID: "DAKOTA-123",
+				},
+			},
 		},
 		{
 			projectName:       "DAKOTA",
 			scenarioName:      "some test dakota",
-			featuresExtracted: []string{},
+			featuresExtracted: []Feature{},
 		},
 		{
-			projectName:       "DAKOTA",
-			scenarioName:      "Dakota-456 some test Dakota-456 dakota",
-			featuresExtracted: []string{"DAKOTA-456", "DAKOTA-456"},
+			projectName:  "DAKOTA",
+			scenarioName: "Dakota-456 some test Dakota-456 dakota",
+			featuresExtracted: []Feature{
+				{
+					ID: "DAKOTA-456",
+				}, {
+					ID: "DAKOTA-456",
+				},
+			},
 		},
 	}
 
 	for _, data := range dataSet {
-		features := getFeaturesFromScenario(data.projectName, data.scenarioName)
+		features := getFeaturesFromScenarioName(data.projectName, data.scenarioName)
+		require.ElementsMatch(t, data.featuresExtracted, features)
+	}
+}
+
+func TestGetFeaturesFromScenarioResult(t *testing.T) {
+	dataSet := []struct {
+		projectName       string
+		scenarioResult    ScenarioResult
+		featuresExtracted []Feature
+	}{
+		{
+			projectName: "dakota",
+			scenarioResult: ScenarioResult{
+				Features: []string{"Dakota-123"},
+			},
+			featuresExtracted: []Feature{
+				{
+					ID: "DAKOTA-123",
+				},
+			},
+		}, {
+			projectName: "Dakota",
+			scenarioResult: ScenarioResult{
+				Features: []string{"DAKOTA-123", "dakota-456", "DaKoTaIsGreat"},
+			},
+			featuresExtracted: []Feature{
+				{
+					ID: "DAKOTA-123",
+				},
+				{
+					ID: "DAKOTA-456",
+				},
+			},
+		}, {
+			projectName: "dakota",
+			scenarioResult: ScenarioResult{
+				Features: []string{"abc", "123"},
+			},
+			featuresExtracted: []Feature{},
+		},
+	}
+
+	for _, data := range dataSet {
+		features := getFeaturesFromScenarioResult(data.projectName, data.scenarioResult)
 		require.ElementsMatch(t, data.featuresExtracted, features)
 	}
 }

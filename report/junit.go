@@ -36,12 +36,13 @@ type JunitTestSuite struct {
 
 // JunitTestCase stuct
 type JunitTestCase struct {
-	XMLName xml.Name  `xml:"testcase"`
-	Name    string    `xml:"name,attr"`
-	Time    float64   `xml:"time,attr"`
-	Failure *struct{} `xml:"failure,omitempty"`
-	Skipped *struct{} `xml:"skipped,omitempty"`
-	Error   *struct{} `xml:"error,omitempty"`
+	XMLName  xml.Name  `xml:"testcase"`
+	Name     string    `xml:"name,attr"`
+	Time     float64   `xml:"time,attr"`
+	Features string    `xml:"features,attr"`
+	Failure  *struct{} `xml:"failure,omitempty"`
+	Skipped  *struct{} `xml:"skipped,omitempty"`
+	Error    *struct{} `xml:"error,omitempty"`
 }
 
 var (
@@ -96,6 +97,7 @@ func (junitXMLParser) parse(r io.Reader, result *model.Data) error {
 				Name:          u.Name,
 				Status:        status,
 				TimeTaken:     u.Time,
+				Features:      strings.Split(u.Features, " "),
 			})
 		}
 	}
