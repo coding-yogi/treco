@@ -43,11 +43,6 @@ var rootCmd = &cobra.Command{
 	Short: "Test Report Collector",
 }
 
-// Execute root commans
-func Execute() error {
-	return rootCmd.Execute()
-}
-
 func init() {
 	rootCmd.AddCommand(collectCmd)
 	rootCmd.AddCommand(serveCmd)

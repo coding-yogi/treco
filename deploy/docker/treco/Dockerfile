@@ -4,4 +4,4 @@ EXPOSE 8080
 ENV GOPATH /go
 WORKDIR ${GOPATH}/bin/
 COPY ../../../treco .
-CMD ["./treco"]
+CMD ["./treco serve"]
