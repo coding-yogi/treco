@@ -2,27 +2,28 @@ package storage
 
 import (
 	"fmt"
+	"log"
+
 	"gorm.io/driver/postgres"
 	"gorm.io/gorm"
-	"log"
 )
 
-// Postgres
+// Postgres DB
 type Postgres struct {
 	db *gorm.DB
 }
 
-// GetDB
+// GetDB returns DB instance
 func (p Postgres) GetDB() *gorm.DB {
 	return p.db
 }
 
-// Insert
+// Insert model into DB
 func (p Postgres) Insert(model interface{}) error {
 	return p.db.Create(model).Error
 }
 
-// Close db connection
+// Close DB connection
 func (p Postgres) Close() error {
 	db, err := p.db.DB()
 	if err != nil {
@@ -32,11 +33,15 @@ func (p Postgres) Close() error {
 	return db.Close()
 }
 
+var connectToPostgresDB = func(dsn string) (*gorm.DB, error) {
+	return gorm.Open(postgres.Open(dsn), &gorm.Config{})
+}
+
 func newPostgresDB(s db) (Postgres, error) {
 	log.Println("connecting to Postgres")
 
-	dsn := fmt.Sprintf("database=%v user=%v password=%v host=%v port=%v sslmode=disable", s.name, s.user, s.password, s.host, s.port)
-	db, err := gorm.Open(postgres.Open(dsn), &gorm.Config{})
+	dsn := fmt.Sprintf("database=%v user=%v password=%v host=%v port=%v sslmode=disable", s.Name, s.User, s.Password, s.Host, s.Port)
+	db, err := connectToPostgresDB(dsn)
 	if err != nil {
 		return Postgres{}, err
 	}

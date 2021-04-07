@@ -1,16 +1,18 @@
-package cmd
+package cli
 
 import (
 	"encoding/json"
 	"fmt"
-	"github.com/spf13/cobra"
 	"io"
 	"log"
 	"net/http"
 	"strings"
 	"treco/storage"
+
+	"github.com/spf13/cobra"
 )
 
+// Error struct having code and description
 type Error struct {
 	Code        int
 	Description string
@@ -18,6 +20,8 @@ type Error struct {
 
 var port int
 var requiredParams = [...]string{BuildID, Environment, Jira, ReportFormat, Service, TestType}
+
+const expectedContentType = "multipart/form-data"
 
 var serveCmd = &cobra.Command{
 	Use:   "serve",
@@ -33,14 +37,14 @@ func init() {
 }
 
 func startServer() {
-	var err error
-
 	// Connect to storage
-	err = storage.New()
+	var err = storage.New()
 	exitOnError(err)
 
 	handler := storage.Handler()
-	defer (*handler).Close()
+	defer func() {
+		_ = (*handler).Close()
+	}()
 
 	// Define http handler
 	http.HandleFunc("/treco/v1/publish/report", publishHandler)
@@ -55,23 +59,19 @@ func publishHandler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	// Read file from report_file
-	reportFile, _, err := r.FormFile(strings.ToLower(ReportFile))
+	rf, err := readFileFromRequest(r)
 	if err != nil {
 		sendErrorResponse(w, err, "unable to retrieve report file", http.StatusBadRequest)
 		return
 	}
 
-	defer reportFile.Close()
-	var rf io.Reader = reportFile
-
-	cfg := config{
-		build:        r.FormValue(strings.ToLower(BuildID)),
-		environment:  r.FormValue(strings.ToLower(Environment)),
-		jira:         r.FormValue(strings.ToLower(Jira)),
-		service:      r.FormValue(strings.ToLower(Service)),
-		reportFormat: r.FormValue(strings.ToLower(ReportFormat)),
-		testType:     r.FormValue(strings.ToLower(TestType)),
+	cfg = config{
+		Build:        r.FormValue(strings.ToLower(BuildID)),
+		Environment:  r.FormValue(strings.ToLower(Environment)),
+		Jira:         r.FormValue(strings.ToLower(Jira)),
+		Service:      r.FormValue(strings.ToLower(Service)),
+		ReportFormat: r.FormValue(strings.ToLower(ReportFormat)),
+		TestType:     r.FormValue(strings.ToLower(TestType)),
 	}
 
 	// Process file
@@ -83,7 +83,19 @@ func publishHandler(w http.ResponseWriter, r *http.Request) {
 
 	log.Println("results uploaded successfully")
 	w.WriteHeader(http.StatusOK)
-	return
+}
+
+func readFileFromRequest(r *http.Request) (io.Reader, error) {
+	reportFile, _, err := r.FormFile(strings.ToLower(ReportFile))
+	if err != nil {
+		return nil, err
+	}
+
+	defer func() {
+		_ = reportFile.Close()
+	}()
+
+	return reportFile, nil
 }
 
 func validatePublishRequest(r *http.Request) (int, error) {
@@ -93,7 +105,6 @@ func validatePublishRequest(r *http.Request) (int, error) {
 	}
 
 	// Validate content-type
-	expectedContentType := "multipart/form-data"
 	if !strings.Contains(r.Header.Get("content-type"), expectedContentType) {
 		return http.StatusBadRequest, fmt.Errorf("invalid content-type, expected: %v", expectedContentType)
 	}
@@ -101,9 +112,9 @@ func validatePublishRequest(r *http.Request) (int, error) {
 	// Validate parameters
 	missingParams := make([]string, 0, len(requiredParams))
 	for _, param := range requiredParams {
-		param := strings.ToLower(param)
-		if r.FormValue(param) == "" {
-			missingParams = append(missingParams, param)
+		lparam := strings.ToLower(param)
+		if r.FormValue(lparam) == "" {
+			missingParams = append(missingParams, lparam)
 		}
 	}
 
@@ -130,6 +141,6 @@ func sendErrorResponse(w http.ResponseWriter, err error, description string, cod
 	})
 
 	w.Header().Set("content-type", "application/json")
-	w.WriteHeader(http.StatusBadRequest)
-	w.Write(b)
+	w.WriteHeader(code)
+	_, _ = w.Write(b)
 }
