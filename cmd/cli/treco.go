@@ -1,5 +1,5 @@
 /*
-Package main runs tool as command line util
+Package cli runs tool as command line util
 */
 package cli
 
