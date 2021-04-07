@@ -1,14 +1,18 @@
+/*
+Package model defines DAO
+*/
 package model
 
 import (
-	"gorm.io/gorm/clause"
 	"regexp"
 	"strings"
 	"time"
 	"treco/storage"
+
+	"gorm.io/gorm/clause"
 )
 
-// Data
+// Data from report
 type Data struct {
 	//DbHandler    *storage.DBHandler
 	Jira         string
@@ -16,7 +20,7 @@ type Data struct {
 	SuiteResult  SuiteResult
 }
 
-// SuiteResult
+// SuiteResult with execution summary
 type SuiteResult struct {
 	ID              uint    `gorm:"primarykey"`
 	Build           string  `gorm:"uniqueIndex:ui_suite_result"`
@@ -34,7 +38,7 @@ type SuiteResult struct {
 	ScenarioResults []*ScenarioResult
 }
 
-// ScenarioResult
+// ScenarioResult struct with execution details
 type ScenarioResult struct {
 	ID            uint    `gorm:"primarykey"`
 	ScenarioID    uint    `gorm:",not null"`
@@ -42,11 +46,12 @@ type ScenarioResult struct {
 	Name          string  `gorm:"-"`
 	Status        string  `gorm:",not null"`
 	TimeTaken     float64 `gorm:"default:0"`
+	Features      []string
 	CreatedAt     time.Time
 	UpdatedAt     time.Time
 }
 
-// Scenario
+// Scenario struct with details of scenario
 type Scenario struct {
 	ID        uint      `gorm:"primarykey"`
 	Name      string    `gorm:"uniqueIndex:ui_scenario"`
@@ -57,7 +62,7 @@ type Scenario struct {
 	UpdatedAt time.Time
 }
 
-// Feature
+// Feature struct for Jiras
 type Feature struct {
 	ID        string `gorm:"primaryKey"`
 	Title     string
@@ -66,10 +71,8 @@ type Feature struct {
 	UpdatedAt time.Time
 }
 
-// Save
-func (d *Data) Save() error {
-	dbh := storage.Handler()
-
+// Save data to DB
+func (d *Data) Save(dbh *storage.DBHandler) error {
 	suiteResult := &d.SuiteResult
 	scenarioResults := suiteResult.ScenarioResults
 
@@ -77,23 +80,18 @@ func (d *Data) Save() error {
 
 	// Loop through scenarios
 	for _, scenarioResult := range scenarioResults {
-		featureIds := getFeaturesFromScenario(d.Jira, scenarioResult.Name)
-		features := make([]Feature, 0, len(featureIds)) //features
-
-		for _, featureId := range featureIds {
-			features = append(features, Feature{ID: featureId})
-		}
-
-		scenario := Scenario{
+		scenarios = append(scenarios, Scenario{
 			Name:     scenarioResult.Name,
 			TestType: d.SuiteResult.TestType,
 			Service:  d.SuiteResult.Service,
-			Features: features,
-		}
-
-		scenarios = append(scenarios, scenario)
+			Features: getFeaturesFromScenarioResult(d.Jira, *scenarioResult),
+		})
 	}
 
+	return saveToDB(dbh, suiteResult, scenarios)
+}
+
+func saveToDB(dbh *storage.DBHandler, suiteResult *SuiteResult, scenarios []Scenario) error {
 	switch db := (*dbh).(type) {
 	case storage.Postgres:
 		return writeToPostgres(&db, suiteResult, scenarios)
@@ -103,7 +101,6 @@ func (d *Data) Save() error {
 }
 
 func writeToPostgres(db *storage.Postgres, suiteResult *SuiteResult, scenarios []Scenario) error {
-
 	// Insert scenarios
 	if err := db.GetDB().Clauses(clause.OnConflict{
 		Columns:   []clause.Column{{Name: "name"}, {Name: "test_type"}, {Name: "service"}},
@@ -117,18 +114,34 @@ func writeToPostgres(db *storage.Postgres, suiteResult *SuiteResult, scenarios [
 		scenarioResult.ScenarioID = scenarios[i].ID
 	}
 
-	// Insert scenarios
+	// Insert suiteResults
 	return db.GetDB().Create(suiteResult).Error
 }
 
-func getFeaturesFromScenario(p string, s string) []string {
-	pat := `(?i)` + p + `-\d+`
+func getFeaturesFromScenarioName(projectName string, scenario string) []Feature {
+	pat := `(?i)` + projectName + `-\d+`
 	re := regexp.MustCompile(pat)
-	matches := re.FindAllString(s, -1)
+	matches := re.FindAllString(scenario, -1)
+
+	features := make([]Feature, 0, len(matches))
 
 	for i := range matches {
-		matches[i] = strings.ToUpper(matches[i])
+		features = append(features, Feature{ID: strings.ToUpper(matches[i])})
 	}
 
-	return matches
+	return features
+}
+
+func getFeaturesFromScenarioResult(projectName string, r ScenarioResult) []Feature {
+	pat := `(?i)` + projectName + `-\d+`
+	re := regexp.MustCompile(pat)
+	features := make([]Feature, 0, len(r.Features))
+	for _, f := range r.Features {
+		f = strings.ToUpper(f)
+		if re.MatchString(f) {
+			features = append(features, Feature{ID: strings.ToUpper(f)})
+		}
+	}
+
+	return features
 }
