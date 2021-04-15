@@ -92,7 +92,7 @@ func (junitXMLParser) parse(r io.Reader, result *model.Data) error {
 				status = SKIPPED
 			}
 
-			suiteResult.ScenarioResults = append(suiteResult.ScenarioResults, &model.ScenarioResult{
+			suiteResult.ScenarioResults = append(suiteResult.ScenarioResults, model.ScenarioResult{
 				SuiteResultID: suiteResult.ID,
 				Name:          u.Name,
 				Status:        status,

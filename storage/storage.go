@@ -26,6 +26,7 @@ var dbHandler DBHandler
 type DBHandler interface {
 	Insert(model interface{}) error
 	Close() error
+	Setup(entities ...interface{}) error
 }
 
 type db struct {
@@ -71,9 +72,9 @@ func New() error {
 	switch strings.ToLower(store.DBType) {
 	case "postgres":
 		dbHandler, err = newPostgresDB(store)
+		return err
+
 	default:
 		return fmt.Errorf(errStrInvalidStorageType, store.DBType)
 	}
-
-	return err
 }

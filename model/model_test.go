@@ -14,7 +14,7 @@ func TestDataSave(t *testing.T) {
 		SuiteResult: SuiteResult{
 			TestType: "unit",
 			Service:  "abc",
-			ScenarioResults: []*ScenarioResult{
+			ScenarioResults: []ScenarioResult{
 				{
 					Name:      "test-scenario-1 (dakota-123)",
 					Status:    "passed",
