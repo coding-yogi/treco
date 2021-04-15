@@ -25,6 +25,10 @@ var collectCmd = &cobra.Command{
 			_ = (*handler).Close()
 		}()
 
+		//DB setup
+		err = (*handler).Setup(dbEntities...)
+		exitOnError(err)
+
 		//validate flags
 		err = validateFlags(cfg)
 		exitOnError(err)

@@ -27,6 +27,7 @@ const (
 )
 
 var cfg config
+var dbEntities = []interface{}{&model.SuiteResult{}, &model.ScenarioResult{}, &model.Scenario{}, &model.Feature{}}
 
 type config struct {
 	Build        string

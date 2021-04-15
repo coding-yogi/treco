@@ -1,2 +1,3 @@
 .idea
-go_build_treco
+.DS_Store
+build

@@ -46,6 +46,10 @@ func startServer() {
 		_ = (*handler).Close()
 	}()
 
+	//DB setup
+	err = (*handler).Setup(dbEntities...)
+	exitOnError(err)
+
 	// Define http handler
 	http.HandleFunc("/treco/v1/publish/report", publishHandler)
 	log.Printf("Starting server on port %v\n", port)

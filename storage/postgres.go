@@ -13,6 +13,11 @@ type Postgres struct {
 	db *gorm.DB
 }
 
+// Setup creates the required entities in DB
+func (p Postgres) Setup(entities ...interface{}) error {
+	return p.db.AutoMigrate(entities...)
+}
+
 // GetDB returns DB instance
 func (p Postgres) GetDB() *gorm.DB {
 	return p.db

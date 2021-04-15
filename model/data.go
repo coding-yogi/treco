@@ -33,20 +33,20 @@ type SuiteResult struct {
 	TotalFailed     uint    `gorm:"default:0"`
 	TotalSkipped    uint    `gorm:"default:0"`
 	Coverage        float64 `gorm:"default:0"`
+	ScenarioResults []ScenarioResult
 	CreatedAt       time.Time
 	UpdatedAt       time.Time
-	ScenarioResults []*ScenarioResult
 }
 
 // ScenarioResult struct with execution details
 type ScenarioResult struct {
-	ID            uint    `gorm:"primarykey"`
-	ScenarioID    uint    `gorm:",not null"`
-	SuiteResultID uint    `gorm:",not null"`
-	Name          string  `gorm:"-"`
-	Status        string  `gorm:",not null"`
-	TimeTaken     float64 `gorm:"default:0"`
-	Features      []string
+	ID            uint     `gorm:"primarykey"`
+	ScenarioID    uint     `gorm:",not null"`
+	SuiteResultID uint     `gorm:",not null"`
+	Name          string   `gorm:"-"`
+	Status        string   `gorm:",not null"`
+	TimeTaken     float64  `gorm:"default:0"`
+	Features      []string `gorm:"-"`
 	CreatedAt     time.Time
 	UpdatedAt     time.Time
 }
@@ -84,7 +84,7 @@ func (d *Data) Save(dbh *storage.DBHandler) error {
 			Name:     scenarioResult.Name,
 			TestType: d.SuiteResult.TestType,
 			Service:  d.SuiteResult.Service,
-			Features: getFeaturesFromScenarioResult(d.Jira, *scenarioResult),
+			Features: getFeaturesFromScenarioResult(d.Jira, scenarioResult),
 		})
 	}
 
@@ -110,8 +110,8 @@ func writeToPostgres(db *storage.Postgres, suiteResult *SuiteResult, scenarios [
 	}
 
 	// Update scenario results with scenario id
-	for i, scenarioResult := range suiteResult.ScenarioResults {
-		scenarioResult.ScenarioID = scenarios[i].ID
+	for i := range suiteResult.ScenarioResults {
+		suiteResult.ScenarioResults[i].ScenarioID = scenarios[i].ID
 	}
 
 	// Insert suiteResults
