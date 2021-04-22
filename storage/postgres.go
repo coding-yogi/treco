@@ -45,7 +45,7 @@ var connectToPostgresDB = func(dsn string) (*gorm.DB, error) {
 func newPostgresDB(s db) (Postgres, error) {
 	log.Println("connecting to Postgres")
 
-	dsn := fmt.Sprintf("database=%v user=%v password=%v host=%v port=%v sslmode=disable", s.Name, s.User, s.Password, s.Host, s.Port)
+	dsn := fmt.Sprintf("database=%v user=%v password=%v host=%v port=%v", s.Name, s.User, s.Password, s.Host, s.Port)
 	db, err := connectToPostgresDB(dsn)
 	if err != nil {
 		return Postgres{}, err
