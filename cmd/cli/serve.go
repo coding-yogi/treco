@@ -51,7 +51,7 @@ func startServer() {
 	exitOnError(err)
 
 	// Define http handler
-	http.HandleFunc("/treco/v1/publish/report", publishHandler)
+	http.HandleFunc("/v1/publish/report", publishHandler)
 	log.Printf("Starting server on port %v\n", port)
 	log.Fatal(http.ListenAndServe(fmt.Sprintf(":%v", port), nil))
 }
