@@ -15,6 +15,14 @@ import (
 	"github.com/stretchr/testify/require"
 )
 
+const (
+	ContentTypeHeader            = "content-type"
+	ContentTypeMultipartFormData = "multipart/form-data"
+	ContentTypeApplicationJson   = "application/json"
+	MethodPost                   = "POST"
+	MethodGet                    = "GET"
+)
+
 var testConfig = config{
 	Build:        "Test",
 	Environment:  "dev",
@@ -23,6 +31,7 @@ var testConfig = config{
 	ReportFormat: "junit",
 	Service:      "treco",
 	TestType:     "unit",
+	Coverage:     "75.20",
 }
 
 var testRequestParams = map[string]string{
@@ -32,6 +41,7 @@ var testRequestParams = map[string]string{
 	strings.ToLower(ReportFormat): "junit",
 	strings.ToLower(Service):      "test_service",
 	strings.ToLower(TestType):     "unit",
+	strings.ToLower(Coverage):     "10.0",
 }
 
 var testFileContent = `
@@ -87,34 +97,44 @@ func TestValidateParamsWithInvalidParams(t *testing.T) {
 		testName   string
 		testType   string
 		reportType string
+		coverage   string
 		err        error
 	}{
 		{
 			testName:   "invalid test type",
 			testType:   "unknown",
 			reportType: "junit",
+			coverage:   "0.0",
 			err:        errInvalidTestType,
 		},
 		{
 			testName:   "invalid report type",
 			testType:   "unit",
 			reportType: "mbunit",
+			coverage:   "20.10",
 			err:        errInvalidReportFormats,
+		},
+		{
+			testName:   "invalid coverage",
+			testType:   "unit",
+			reportType: "junit",
+			coverage:   "abc",
+			err:        errCoverageValueNotFloat,
 		},
 	}
 
 	for _, data := range testData {
 		t.Run(data.testName, func(t *testing.T) {
-			err := validateParams(data.testType, data.reportType)
+			err := validateParams(data.testType, data.reportType, data.coverage)
 			require.Error(t, err)
 			require.Equal(t, data.err, err)
 		})
 	}
 }
 
-func TestValidateParamsValidParams(t *testing.T) {
+func TestValidateParamsWithValidValues(t *testing.T) {
 	for _, testType := range validTestTypes {
-		err := validateParams(testType, validReportFormats[0])
+		err := validateParams(testType, validReportFormats[0], "0.0")
 		require.NoError(t, err)
 	}
 }
@@ -134,7 +154,7 @@ func TestErrorResponse(t *testing.T) {
 
 	sendErrorResponse(resRecorder, err, errDescription, errCode)
 	require.Equal(t, errCode, resRecorder.Code)
-	require.Equal(t, "application/json", resRecorder.Header().Get("content-type"))
+	require.Equal(t, ContentTypeApplicationJson, resRecorder.Header().Get(ContentTypeHeader))
 	require.Equal(t, body, resRecorder.Body.Bytes())
 }
 
@@ -150,7 +170,7 @@ func TestPublishHandlerWithInvalidData(t *testing.T) {
 
 	feeder := []feederFunc{
 		func() testData {
-			request, err := createTestHTTPRequest("GET", "multipart/form-data",
+			request, err := createTestHTTPRequest(MethodGet, ContentTypeMultipartFormData,
 				testRequestParams, testFileContent)
 			require.NoError(t, err)
 
@@ -164,7 +184,7 @@ func TestPublishHandlerWithInvalidData(t *testing.T) {
 			}
 		},
 		func() testData {
-			request, err := createTestHTTPRequest("POST", "application/json",
+			request, err := createTestHTTPRequest(MethodPost, ContentTypeApplicationJson,
 				testRequestParams, testFileContent)
 			require.NoError(t, err)
 
@@ -178,7 +198,7 @@ func TestPublishHandlerWithInvalidData(t *testing.T) {
 			}
 		},
 		func() testData {
-			request, err := createTestHTTPRequest("POST", "multipart/form-data",
+			request, err := createTestHTTPRequest(MethodPost, ContentTypeMultipartFormData,
 				map[string]string{}, testFileContent)
 			require.NoError(t, err)
 
@@ -198,7 +218,7 @@ func TestPublishHandlerWithInvalidData(t *testing.T) {
 			}
 
 			requestParams[strings.ToLower(TestType)] = "unknown"
-			request, err := createTestHTTPRequest("POST", "multipart/form-data",
+			request, err := createTestHTTPRequest(MethodPost, ContentTypeMultipartFormData,
 				requestParams, testFileContent)
 			require.NoError(t, err)
 
@@ -212,7 +232,7 @@ func TestPublishHandlerWithInvalidData(t *testing.T) {
 			}
 		},
 		func() testData {
-			request, err := createTestHTTPRequest("POST", "multipart/form-data",
+			request, err := createTestHTTPRequest(MethodPost, ContentTypeMultipartFormData,
 				testRequestParams, "some invalid text format")
 			require.NoError(t, err)
 
@@ -222,6 +242,26 @@ func TestPublishHandlerWithInvalidData(t *testing.T) {
 				resErr: Error{
 					Code:        http.StatusInternalServerError,
 					Description: "unable to process the request",
+				},
+			}
+		},
+		func() testData {
+			requestParams := make(map[string]string)
+			for k, v := range testRequestParams {
+				requestParams[k] = v
+			}
+
+			requestParams[strings.ToLower(Coverage)] = "unknown"
+			request, err := createTestHTTPRequest(MethodPost, ContentTypeMultipartFormData,
+				requestParams, testFileContent)
+			require.NoError(t, err)
+
+			return testData{
+				testName: "invalid coverage value",
+				request:  request,
+				resErr: Error{
+					Code:        http.StatusBadRequest,
+					Description: errCoverageValueNotFloat.Error(),
 				},
 			}
 		},
@@ -236,14 +276,14 @@ func TestPublishHandlerWithInvalidData(t *testing.T) {
 			body, _ := json.Marshal(data.resErr)
 
 			require.Equal(t, data.resErr.Code, resRecorder.Code)
-			require.Equal(t, "application/json", resRecorder.Header().Get("content-type"))
+			require.Equal(t, ContentTypeApplicationJson, resRecorder.Header().Get(ContentTypeHeader))
 			require.Equal(t, string(body), resRecorder.Body.String())
 		})
 	}
 }
 
 func TestPublishHandlerWithValidRequest(t *testing.T) {
-	req, err := createTestHTTPRequest("POST", "multipart/form-data", testRequestParams, testFileContent)
+	req, err := createTestHTTPRequest(MethodPost, ContentTypeMultipartFormData, testRequestParams, testFileContent)
 	require.NoError(t, err)
 
 	res := httptest.NewRecorder()
@@ -278,15 +318,15 @@ func createTestHTTPRequest(method, contentType string, params map[string]string,
 	}
 
 	//Create request
-	req := httptest.NewRequest(method, "/treco/v1/publish/report", body)
-	if contentType == "multipart/form-data" {
-		req.Header.Set("Content-Type", writer.FormDataContentType())
+	req := httptest.NewRequest(method, "/v1/publish/report", body)
+	if contentType == ContentTypeMultipartFormData {
+		req.Header.Set(ContentTypeHeader, writer.FormDataContentType())
 		err = req.ParseMultipartForm(10 << 20)
 		if err != nil {
 			return &http.Request{}, err
 		}
 	} else {
-		req.Header.Set("Content-Type", contentType)
+		req.Header.Set(ContentTypeHeader, contentType)
 	}
 
 	return req, err

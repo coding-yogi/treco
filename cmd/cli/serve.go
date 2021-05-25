@@ -76,6 +76,7 @@ func publishHandler(w http.ResponseWriter, r *http.Request) {
 		Service:      r.FormValue(strings.ToLower(Service)),
 		ReportFormat: r.FormValue(strings.ToLower(ReportFormat)),
 		TestType:     r.FormValue(strings.ToLower(TestType)),
+		Coverage:     r.FormValue(Coverage),
 	}
 
 	// Process file
@@ -129,7 +130,8 @@ func validatePublishRequest(r *http.Request) (int, error) {
 	// Validate param values
 	testType := r.FormValue(strings.ToLower(TestType))
 	reportFormat := r.FormValue(strings.ToLower(ReportFormat))
-	if err := validateParams(testType, reportFormat); err != nil {
+	coverage := r.FormValue(strings.ToLower(Coverage))
+	if err := validateParams(testType, reportFormat, coverage); err != nil {
 		return http.StatusBadRequest, err
 	}
 
