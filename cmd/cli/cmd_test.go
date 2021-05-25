@@ -18,7 +18,7 @@ import (
 const (
 	ContentTypeHeader            = "content-type"
 	ContentTypeMultipartFormData = "multipart/form-data"
-	ContentTypeApplicationJson   = "application/json"
+	ContentTypeApplicationJSON   = "application/json"
 	MethodPost                   = "POST"
 	MethodGet                    = "GET"
 )
@@ -154,7 +154,7 @@ func TestErrorResponse(t *testing.T) {
 
 	sendErrorResponse(resRecorder, err, errDescription, errCode)
 	require.Equal(t, errCode, resRecorder.Code)
-	require.Equal(t, ContentTypeApplicationJson, resRecorder.Header().Get(ContentTypeHeader))
+	require.Equal(t, ContentTypeApplicationJSON, resRecorder.Header().Get(ContentTypeHeader))
 	require.Equal(t, body, resRecorder.Body.Bytes())
 }
 
@@ -184,7 +184,7 @@ func TestPublishHandlerWithInvalidData(t *testing.T) {
 			}
 		},
 		func() testData {
-			request, err := createTestHTTPRequest(MethodPost, ContentTypeApplicationJson,
+			request, err := createTestHTTPRequest(MethodPost, ContentTypeApplicationJSON,
 				testRequestParams, testFileContent)
 			require.NoError(t, err)
 
@@ -276,7 +276,7 @@ func TestPublishHandlerWithInvalidData(t *testing.T) {
 			body, _ := json.Marshal(data.resErr)
 
 			require.Equal(t, data.resErr.Code, resRecorder.Code)
-			require.Equal(t, ContentTypeApplicationJson, resRecorder.Header().Get(ContentTypeHeader))
+			require.Equal(t, ContentTypeApplicationJSON, resRecorder.Header().Get(ContentTypeHeader))
 			require.Equal(t, string(body), resRecorder.Body.String())
 		})
 	}
