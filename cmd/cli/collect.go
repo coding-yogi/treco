@@ -52,27 +52,29 @@ var collectCmd = &cobra.Command{
 func init() {
 	flags := collectCmd.Flags()
 
-	flags.StringVarP(&cfg.Build, "Build", "b", os.Getenv(BuildID), "CI Build name or number to uniquely identify the Build")
-	flags.StringVarP(&cfg.Environment, "Environment", "e", os.Getenv(Environment), "Environment on which the Build is executed")
-	flags.StringVarP(&cfg.Jira, "Jira", "j", os.Getenv(Jira), "Jira project name")
+	flags.StringVarP(&cfg.Build, "build", "b", os.Getenv(BuildID), "CI Build name or number to uniquely identify the Build")
+	flags.StringVarP(&cfg.Environment, "environment", "e", os.Getenv(Environment), "Environment on which the Build is executed")
+	flags.StringVarP(&cfg.Jira, "jira", "j", os.Getenv(Jira), "Jira project name")
 	flags.StringVarP(&cfg.ReportFile, "report", "r", os.Getenv(ReportFile), "input file containing test reports")
 	flags.StringVarP(&cfg.ReportFormat, "format", "f", os.Getenv(ReportFormat), "report of report file")
-	flags.StringVarP(&cfg.Service, "Service", "s", os.Getenv(Service), "Service name")
+	flags.StringVarP(&cfg.Service, "service", "s", os.Getenv(Service), "Service name")
 	flags.StringVarP(&cfg.TestType, "type", "t", os.Getenv(TestType), "type of tests executed. 'unit', 'contract', 'integration' or 'e2e")
+	flags.StringVarP(&cfg.Coverage, "coverage", "c", os.Getenv(Coverage), "statement level code coverage")
 }
 
 var (
 	errMissingArguments = fmt.Errorf("\nmissing arguments, please run `treco --help` for more info\n"+
 		"\nyou can also supply arguments via following ENVIRONMENT variables\n"+
-		"%s, %s, %s, %s, %s, %s, %s ", BuildID, Environment, Jira, ReportFile, ReportFormat, Service, TestType)
+		"%s, %s, %s, %s, %s, %s, %s, %s ", BuildID, Environment, Jira, ReportFile, ReportFormat, Service, TestType, Coverage)
 )
 
 func validateFlags(cfg config) error {
 	//check for empty flags
 	log.Println("validating parameters")
-	if cfg.ReportFile == "" || cfg.ReportFormat == "" || cfg.Service == "" || cfg.TestType == "" || cfg.Build == "" || cfg.Jira == "" || cfg.Environment == "" {
+	if cfg.ReportFile == "" || cfg.ReportFormat == "" || cfg.Service == "" || cfg.TestType == "" || cfg.Build == "" ||
+		cfg.Jira == "" || cfg.Environment == "" || cfg.Coverage == "" {
 		return errMissingArguments
 	}
 
-	return validateParams(cfg.TestType, cfg.ReportFormat)
+	return validateParams(cfg.TestType, cfg.ReportFormat, cfg.Coverage)
 }

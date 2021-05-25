@@ -7,6 +7,7 @@ import (
 	"fmt"
 	"io"
 	"log"
+	"strconv"
 	"strings"
 	"treco/model"
 	"treco/report"
@@ -24,6 +25,7 @@ const (
 	ReportFormat = "REPORT_FORMAT"
 	Service      = "SERVICE_NAME"
 	TestType     = "TEST_TYPE"
+	Coverage     = "COVERAGE"
 )
 
 var cfg config
@@ -37,6 +39,7 @@ type config struct {
 	ReportFormat string
 	Service      string
 	TestType     string
+	Coverage     string
 }
 
 var rootCmd = &cobra.Command{
@@ -58,11 +61,12 @@ var (
 	validTestTypes     = [...]string{"unit", "contract", "integration", "e2e"}
 	validReportFormats = [...]string{"junit"}
 
-	errInvalidTestType      = fmt.Errorf("test type should be one of %v", validTestTypes)
-	errInvalidReportFormats = fmt.Errorf("report format should be one of %v", validReportFormats)
+	errInvalidTestType       = fmt.Errorf("test type should be one of %v", validTestTypes)
+	errInvalidReportFormats  = fmt.Errorf("report format should be one of %v", validReportFormats)
+	errCoverageValueNotFloat = fmt.Errorf("coverage value should be a floating number")
 )
 
-func validateParams(testType, reportType string) error {
+func validateParams(testType, reportType, coverage string) error {
 	//check for valid test type
 	if !isValid(testType, validTestTypes[:]) {
 		return errInvalidTestType
@@ -71,6 +75,11 @@ func validateParams(testType, reportType string) error {
 	//check for valid test report format
 	if !isValid(reportType, validReportFormats[:]) {
 		return errInvalidReportFormats
+	}
+
+	//check coverage is in float
+	if _, err := strconv.ParseFloat(coverage, 64); err != nil {
+		return errCoverageValueNotFloat
 	}
 
 	return nil
@@ -95,6 +104,7 @@ func exitOnError(e error) {
 
 func process(cfg config, f io.Reader) error {
 	var err error
+	coverage, _ := strconv.ParseFloat(cfg.Coverage, 64)
 
 	// Create base result
 	data := &model.Data{
@@ -105,6 +115,7 @@ func process(cfg config, f io.Reader) error {
 			Environment: cfg.Environment,
 			Service:     strings.ToLower(cfg.Service),
 			TestType:    strings.ToLower(cfg.TestType),
+			Coverage:    coverage,
 		},
 	}
 
