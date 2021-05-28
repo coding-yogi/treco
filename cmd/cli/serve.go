@@ -76,7 +76,7 @@ func publishHandler(w http.ResponseWriter, r *http.Request) {
 		Service:      r.FormValue(strings.ToLower(Service)),
 		ReportFormat: r.FormValue(strings.ToLower(ReportFormat)),
 		TestType:     r.FormValue(strings.ToLower(TestType)),
-		Coverage:     r.FormValue(Coverage),
+		Coverage:     r.FormValue(strings.ToLower(Coverage)),
 	}
 
 	// Process file
