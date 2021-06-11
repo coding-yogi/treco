@@ -61,25 +61,25 @@ var (
 	validTestTypes     = [...]string{"unit", "contract", "integration", "e2e"}
 	validReportFormats = [...]string{"junit"}
 
-	errInvalidTestType       = fmt.Errorf("test type should be one of %v", validTestTypes)
-	errInvalidReportFormats  = fmt.Errorf("report format should be one of %v", validReportFormats)
-	errCoverageValueNotFloat = fmt.Errorf("coverage value should be a floating number")
+	errInvalidTestType       = "test type %v is invalid, should be one of %v"
+	errInvalidReportFormats  = "report format %v is invalid, should be one of %v"
+	errCoverageValueNotFloat = "coverage value should be a floating number"
 )
 
 func validateParams(testType, reportType, coverage string) error {
 	//check for valid test type
 	if !isValid(testType, validTestTypes[:]) {
-		return errInvalidTestType
+		return fmt.Errorf(errInvalidTestType, testType, validTestTypes)
 	}
 
 	//check for valid test report format
 	if !isValid(reportType, validReportFormats[:]) {
-		return errInvalidReportFormats
+		return fmt.Errorf(errInvalidReportFormats, reportType, validReportFormats)
 	}
 
 	//check coverage is in float
 	if _, err := strconv.ParseFloat(coverage, 64); err != nil {
-		return errCoverageValueNotFloat
+		return fmt.Errorf(errCoverageValueNotFloat)
 	}
 
 	return nil
