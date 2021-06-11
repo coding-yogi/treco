@@ -112,7 +112,7 @@ func TestValidateParamsWithInvalidParams(t *testing.T) {
 			testType:   "unit",
 			reportType: "mbunit",
 			coverage:   "20.10",
-			err:         fmt.Errorf(errInvalidReportFormats,"mbunit", validReportFormats),
+			err:        fmt.Errorf(errInvalidReportFormats, "mbunit", validReportFormats),
 		},
 		{
 			testName:   "invalid coverage",
