@@ -105,21 +105,21 @@ func TestValidateParamsWithInvalidParams(t *testing.T) {
 			testType:   "unknown",
 			reportType: "junit",
 			coverage:   "0.0",
-			err:        errInvalidTestType,
+			err:        fmt.Errorf(errInvalidTestType, "unknown", validTestTypes),
 		},
 		{
 			testName:   "invalid report type",
 			testType:   "unit",
 			reportType: "mbunit",
 			coverage:   "20.10",
-			err:        errInvalidReportFormats,
+			err:         fmt.Errorf(errInvalidReportFormats,"mbunit", validReportFormats),
 		},
 		{
 			testName:   "invalid coverage",
 			testType:   "unit",
 			reportType: "junit",
 			coverage:   "abc",
-			err:        errCoverageValueNotFloat,
+			err:        fmt.Errorf(errCoverageValueNotFloat),
 		},
 	}
 
@@ -217,7 +217,8 @@ func TestPublishHandlerWithInvalidData(t *testing.T) {
 				requestParams[k] = v
 			}
 
-			requestParams[strings.ToLower(TestType)] = "unknown"
+			invalidTestType := "unknown"
+			requestParams[strings.ToLower(TestType)] = invalidTestType
 			request, err := createTestHTTPRequest(MethodPost, ContentTypeMultipartFormData,
 				requestParams, testFileContent)
 			require.NoError(t, err)
@@ -227,7 +228,7 @@ func TestPublishHandlerWithInvalidData(t *testing.T) {
 				request:  request,
 				resErr: Error{
 					Code:        http.StatusBadRequest,
-					Description: errInvalidTestType.Error(),
+					Description: fmt.Errorf(errInvalidTestType, invalidTestType, validTestTypes).Error(),
 				},
 			}
 		},
@@ -261,7 +262,7 @@ func TestPublishHandlerWithInvalidData(t *testing.T) {
 				request:  request,
 				resErr: Error{
 					Code:        http.StatusBadRequest,
-					Description: errCoverageValueNotFloat.Error(),
+					Description: fmt.Errorf(errCoverageValueNotFloat).Error(),
 				},
 			}
 		},
