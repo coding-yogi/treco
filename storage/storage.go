@@ -55,7 +55,7 @@ func New() error {
 	log.Println("validating DB details")
 	if conf.Get(DBType) == "" || conf.Get(DBName) == "" || conf.Get(DBHost) == "" || conf.Get(DBPort) == "" ||
 		conf.Get(DBUser) == "" || conf.Get(DBPassword) == "" {
-		log.Printf("DBType: %v, DBName: %v, DBHost: %v, DBPort: %v, DBUser %v, DBPassword %v", conf.Get(DBType) ,
+		log.Printf("DBType: %v, DBName: %v, DBHost: %v, DBPort: %v, DBUser %v, DBPassword %v", conf.Get(DBType),
 			conf.Get(DBName), conf.Get(DBHost), conf.Get(DBPort), conf.Get(DBUser), conf.Get(DBPassword))
 
 		return errMissingDBParams
