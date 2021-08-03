@@ -6,8 +6,10 @@ package storage
 import (
 	"fmt"
 	"log"
-	"os"
 	"strings"
+	"treco/conf"
+
+	"github.com/spf13/viper"
 )
 
 // DB Details
@@ -52,19 +54,20 @@ var (
 
 // New initiates a new DB connection
 func New() error {
+	log.Printf("from viper %v", viper.Get(DBType))
 	log.Println("validating DB details")
-	if os.Getenv(DBType) == "" || os.Getenv(DBName) == "" || os.Getenv(DBHost) == "" || os.Getenv(DBPort) == "" ||
-		os.Getenv(DBUser) == "" || os.Getenv(DBPassword) == "" {
+	if conf.Get(DBType) == "" || conf.Get(DBName) == "" || conf.Get(DBHost) == "" || conf.Get(DBPort) == "" ||
+		conf.Get(DBUser) == "" || conf.Get(DBPassword) == "" {
 		return errMissingDBParams
 	}
 
 	store := db{
-		DBType:   os.Getenv(DBType),
-		Name:     os.Getenv(DBName),
-		Host:     os.Getenv(DBHost),
-		Port:     os.Getenv(DBPort),
-		User:     os.Getenv(DBUser),
-		Password: os.Getenv(DBPassword),
+		DBType:   conf.Get(DBType),
+		Name:     conf.Get(DBName),
+		Host:     conf.Get(DBHost),
+		Port:     conf.Get(DBPort),
+		User:     conf.Get(DBUser),
+		Password: conf.Get(DBPassword),
 	}
 
 	var err error
