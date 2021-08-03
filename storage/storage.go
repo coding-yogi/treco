@@ -8,8 +8,6 @@ import (
 	"log"
 	"strings"
 	"treco/conf"
-
-	"github.com/spf13/viper"
 )
 
 // DB Details
@@ -54,10 +52,12 @@ var (
 
 // New initiates a new DB connection
 func New() error {
-	log.Printf("from viper %v", viper.Get(DBType))
 	log.Println("validating DB details")
 	if conf.Get(DBType) == "" || conf.Get(DBName) == "" || conf.Get(DBHost) == "" || conf.Get(DBPort) == "" ||
 		conf.Get(DBUser) == "" || conf.Get(DBPassword) == "" {
+		log.Printf("DBType: %v, DBName: %v, DBHost: %v, DBPort: %v, DBUser %v, DBPassword %v", conf.Get(DBType) ,
+			conf.Get(DBName), conf.Get(DBHost), conf.Get(DBPort), conf.Get(DBUser), conf.Get(DBPassword))
+
 		return errMissingDBParams
 	}
 
