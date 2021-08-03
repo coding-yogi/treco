@@ -1,3 +1,6 @@
+/*
+Package conf to handle configuration files
+*/
 package conf
 
 import (

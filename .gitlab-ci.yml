@@ -6,4 +6,4 @@ include:
 variables:
   CMD_NAME: treco
   ECR_URI: 851255665500.dkr.ecr.ap-southeast-1.amazonaws.com/treco
-  UNITTEST_MIN_COVERAGE: 80
+  UNITTEST_MIN_COVERAGE: 75

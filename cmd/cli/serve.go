@@ -40,7 +40,6 @@ func init() {
 }
 
 func startServer() {
-
 	var err error
 
 	// Check config file
