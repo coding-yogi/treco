@@ -34,10 +34,11 @@ type JunitTestSuite struct {
 	JunitTestCases []JunitTestCase `xml:"testcase"`
 }
 
-// JunitTestCase stuct
+// JunitTestCase struct
 type JunitTestCase struct {
 	XMLName  xml.Name  `xml:"testcase"`
 	Name     string    `xml:"name,attr"`
+	Class    string    `xml:"classname,attr"`
 	Time     float64   `xml:"time,attr"`
 	Features string    `xml:"features,attr"`
 	Failure  *struct{} `xml:"failure,omitempty"`
@@ -77,27 +78,28 @@ func (junitXMLParser) parse(r io.Reader, result *model.Data) error {
 		jur.TestSuites = append(jur.TestSuites, suite)
 	}
 
-	for _, s := range jur.TestSuites {
-		suiteResult.TotalExecuted += s.Tests
-		suiteResult.TotalFailed += s.Failures + s.Errors
-		suiteResult.TotalSkipped += s.Skipped
-		suiteResult.TotalPassed += s.Tests - (s.Failures + s.Skipped + s.Errors)
-		suiteResult.TimeTaken += s.Time
+	for _, suite := range jur.TestSuites {
+		suiteResult.TotalExecuted += suite.Tests
+		suiteResult.TotalFailed += suite.Failures + suite.Errors
+		suiteResult.TotalSkipped += suite.Skipped
+		suiteResult.TotalPassed += suite.Tests - (suite.Failures + suite.Skipped + suite.Errors)
+		suiteResult.TimeTaken += suite.Time
 
-		for _, u := range s.JunitTestCases {
+		for _, tc := range suite.JunitTestCases {
 			status := PASSED
-			if u.Failure != nil || u.Error != nil {
+			if tc.Failure != nil || tc.Error != nil {
 				status = FAILED
-			} else if u.Skipped != nil {
+			} else if tc.Skipped != nil {
 				status = SKIPPED
 			}
 
 			suiteResult.ScenarioResults = append(suiteResult.ScenarioResults, model.ScenarioResult{
 				SuiteResultID: suiteResult.ID,
-				Name:          u.Name,
+				Name:          tc.Name,
+				Class: 		   tc.Class,
 				Status:        status,
-				TimeTaken:     u.Time,
-				Features:      strings.Split(u.Features, " "),
+				TimeTaken:     tc.Time,
+				Features:      strings.Split(tc.Features, " "),
 			})
 		}
 	}
