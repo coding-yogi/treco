@@ -96,7 +96,7 @@ func (junitXMLParser) parse(r io.Reader, result *model.Data) error {
 			suiteResult.ScenarioResults = append(suiteResult.ScenarioResults, model.ScenarioResult{
 				SuiteResultID: suiteResult.ID,
 				Name:          tc.Name,
-				Class: 		   tc.Class,
+				Class:         tc.Class,
 				Status:        status,
 				TimeTaken:     tc.Time,
 				Features:      strings.Split(tc.Features, " "),
