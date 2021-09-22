@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"os"
 	"testing"
+	"treco/conf"
 
 	"github.com/stretchr/testify/require"
 	"gorm.io/gorm"
@@ -34,7 +35,7 @@ func TestMissingDBDetails(t *testing.T) {
 func TestInvalidDBType(t *testing.T) {
 	//Set some value to all db params
 	for _, dbParam := range dbParams {
-		_ = os.Setenv(dbParam, "test")
+		conf.Set(dbParam, "test")
 	}
 
 	//test
@@ -45,12 +46,12 @@ func TestInvalidDBType(t *testing.T) {
 
 func TestValidPostgresDBType(t *testing.T) {
 	//Set data
-	_ = os.Setenv(DBHost, "localhost")
-	_ = os.Setenv(DBUser, "some_user")
-	_ = os.Setenv(DBPassword, "some_password")
-	_ = os.Setenv(DBPort, "5432")
-	_ = os.Setenv(DBName, "some_db")
-	_ = os.Setenv(DBType, "postgres")
+	conf.Set(DBHost, "localhost")
+	conf.Set(DBUser, "some_user")
+	conf.Set(DBPassword, "some_password")
+	conf.Set(DBPort, "5432")
+	conf.Set(DBName, "some_db")
+	conf.Set(DBType, "postgres")
 
 	//Mock
 	connectToDB := connectToPostgresDB
@@ -71,12 +72,12 @@ func TestValidPostgresDBType(t *testing.T) {
 
 func TestInvalidPostgresDBConnection(t *testing.T) {
 	//Set data
-	_ = os.Setenv(DBHost, "localhost")
-	_ = os.Setenv(DBUser, "some_user")
-	_ = os.Setenv(DBPassword, "some_password")
-	_ = os.Setenv(DBPort, "5432")
-	_ = os.Setenv(DBName, "some_db")
-	_ = os.Setenv(DBType, "postgres")
+	conf.Set(DBHost, "localhost")
+	conf.Set(DBUser, "some_user")
+	conf.Set(DBPassword, "some_password")
+	conf.Set(DBPort, "5432")
+	conf.Set(DBName, "some_db")
+	conf.Set(DBType, "postgres")
 
 	//Test
 	err := New()
