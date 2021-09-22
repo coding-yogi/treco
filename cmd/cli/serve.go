@@ -7,6 +7,7 @@ import (
 	"log"
 	"net/http"
 	"strings"
+	"treco/conf"
 	"treco/storage"
 
 	"github.com/spf13/cobra"
@@ -19,6 +20,7 @@ type Error struct {
 }
 
 var port int
+var cfgFile string
 var requiredParams = [...]string{BuildID, Environment, Jira, ReportFormat, Service, TestType}
 
 const expectedContentType = "multipart/form-data"
@@ -34,11 +36,24 @@ var serveCmd = &cobra.Command{
 func init() {
 	flags := serveCmd.Flags()
 	flags.IntVarP(&port, "port", "p", 8080, "port for server to run")
+	flags.StringVarP(&cfgFile, "config", "c", "", "config file")
 }
 
 func startServer() {
+	var err error
+
+	// Check config file
+	if cfgFile != "" {
+		if err = conf.LoadEnvFromFile(cfgFile); err != nil {
+			log.Printf("error occured while loading from config %v\n", err)
+			return
+		}
+	} else {
+		log.Println("no config file path set")
+	}
+
 	// Connect to storage
-	var err = storage.New()
+	err = storage.New()
 	exitOnError(err)
 
 	handler := storage.Handler()
