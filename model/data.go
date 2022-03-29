@@ -44,6 +44,7 @@ type ScenarioResult struct {
 	ScenarioID    uint     `gorm:",not null"`
 	SuiteResultID uint     `gorm:",not null"`
 	Name          string   `gorm:"-"`
+	Class         string   `gorm:"-"`
 	Status        string   `gorm:",not null"`
 	TimeTaken     float64  `gorm:"default:0"`
 	Features      []string `gorm:"-"`
@@ -55,6 +56,7 @@ type ScenarioResult struct {
 type Scenario struct {
 	ID        uint      `gorm:"primarykey"`
 	Name      string    `gorm:"uniqueIndex:ui_scenario"`
+	Class     string    `gorm:"uniqueIndex:ui_scenario"`
 	TestType  string    `gorm:"uniqueIndex:ui_scenario"`
 	Service   string    `gorm:"uniqueIndex:ui_scenario"`
 	Features  []Feature `gorm:"many2many:feature_scenarios"`
@@ -82,6 +84,7 @@ func (d *Data) Save(dbh *storage.DBHandler) error {
 	for _, scenarioResult := range scenarioResults {
 		scenarios = append(scenarios, Scenario{
 			Name:     scenarioResult.Name,
+			Class:    scenarioResult.Class,
 			TestType: d.SuiteResult.TestType,
 			Service:  d.SuiteResult.Service,
 			Features: getFeaturesFromScenarioResult(d.Jira, scenarioResult),
@@ -103,7 +106,7 @@ func saveToDB(dbh *storage.DBHandler, suiteResult *SuiteResult, scenarios []Scen
 func writeToPostgres(db *storage.Postgres, suiteResult *SuiteResult, scenarios []Scenario) error {
 	// Insert scenarios
 	if err := db.GetDB().Clauses(clause.OnConflict{
-		Columns:   []clause.Column{{Name: "name"}, {Name: "test_type"}, {Name: "service"}},
+		Columns:   []clause.Column{{Name: "name"}, {Name: "class"}, {Name: "test_type"}, {Name: "service"}},
 		DoUpdates: clause.AssignmentColumns([]string{"name"}),
 	}).Create(&scenarios).Error; err != nil {
 		return err
@@ -116,20 +119,6 @@ func writeToPostgres(db *storage.Postgres, suiteResult *SuiteResult, scenarios [
 
 	// Insert suiteResults
 	return db.GetDB().Create(suiteResult).Error
-}
-
-func getFeaturesFromScenarioName(projectName string, scenario string) []Feature {
-	pat := `(?i)` + projectName + `-\d+`
-	re := regexp.MustCompile(pat)
-	matches := re.FindAllString(scenario, -1)
-
-	features := make([]Feature, 0, len(matches))
-
-	for i := range matches {
-		features = append(features, Feature{ID: strings.ToUpper(matches[i])})
-	}
-
-	return features
 }
 
 func getFeaturesFromScenarioResult(projectName string, r ScenarioResult) []Feature {
