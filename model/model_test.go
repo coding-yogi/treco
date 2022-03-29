@@ -33,65 +33,6 @@ func TestDataSave(t *testing.T) {
 	require.NoError(t, err)
 }
 
-func TestGetFeaturesFromScenarioName(t *testing.T) {
-	dataSet := []struct {
-		projectName       string
-		scenarioName      string
-		featuresExtracted []Feature
-	}{
-		{
-			projectName:  "dakota",
-			scenarioName: "some test (Dakota-123)",
-			featuresExtracted: []Feature{
-				{
-					ID: "DAKOTA-123",
-				},
-			},
-		}, {
-			projectName:  "Dakota",
-			scenarioName: "Dakota-456 some test (Dakota-123)",
-			featuresExtracted: []Feature{
-				{
-					ID: "DAKOTA-456",
-				}, {
-					ID: "DAKOTA-123",
-				},
-			},
-		}, {
-			projectName:  "DAKOTA",
-			scenarioName: "Dakota-456 some test (Dakota-123)",
-			featuresExtracted: []Feature{
-				{
-					ID: "DAKOTA-456",
-				}, {
-					ID: "DAKOTA-123",
-				},
-			},
-		},
-		{
-			projectName:       "DAKOTA",
-			scenarioName:      "some test dakota",
-			featuresExtracted: []Feature{},
-		},
-		{
-			projectName:  "DAKOTA",
-			scenarioName: "Dakota-456 some test Dakota-456 dakota",
-			featuresExtracted: []Feature{
-				{
-					ID: "DAKOTA-456",
-				}, {
-					ID: "DAKOTA-456",
-				},
-			},
-		},
-	}
-
-	for _, data := range dataSet {
-		features := getFeaturesFromScenarioName(data.projectName, data.scenarioName)
-		require.ElementsMatch(t, data.featuresExtracted, features)
-	}
-}
-
 func TestGetFeaturesFromScenarioResult(t *testing.T) {
 	dataSet := []struct {
 		projectName       string
