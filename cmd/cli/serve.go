@@ -62,8 +62,8 @@ func startServer() {
 	}()
 
 	//DB setup
-	err = (*handler).Setup(dbEntities...)
-	exitOnError(err)
+	//err = (*handler).Setup(dbEntities...)
+	//exitOnError(err)
 
 	// Define http handler
 	http.HandleFunc("/v1/publish/report", publishHandler)
