@@ -94,6 +94,7 @@ func (d *Data) Save(dbh *storage.DBHandler) error {
 	return saveToDB(dbh, suiteResult, scenarios)
 }
 
+// saveToDB
 func saveToDB(dbh *storage.DBHandler, suiteResult *SuiteResult, scenarios []Scenario) error {
 	switch db := (*dbh).(type) {
 	case storage.Postgres:
@@ -103,6 +104,7 @@ func saveToDB(dbh *storage.DBHandler, suiteResult *SuiteResult, scenarios []Scen
 	return nil
 }
 
+// writeToPostgres
 func writeToPostgres(db *storage.Postgres, suiteResult *SuiteResult, scenarios []Scenario) error {
 	// Insert scenarios
 	if err := db.GetDB().Clauses(clause.OnConflict{
@@ -121,6 +123,7 @@ func writeToPostgres(db *storage.Postgres, suiteResult *SuiteResult, scenarios [
 	return db.GetDB().Create(suiteResult).Error
 }
 
+// getFeaturesFromScenarioResult
 func getFeaturesFromScenarioResult(projectName string, r ScenarioResult) []Feature {
 	pat := `(?i)` + projectName + `-\d+`
 	re := regexp.MustCompile(pat)

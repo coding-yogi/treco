@@ -9,6 +9,18 @@ import (
 	"github.com/spf13/viper"
 )
 
+// Config ...
+type Config struct {
+	Build        string
+	Environment  string
+	Jira         string
+	ReportFile   string
+	ReportFormat string
+	Service      string
+	TestType     string
+	Coverage     string
+}
+
 // LoadEnvFromFile ...
 func LoadEnvFromFile(file string) error {
 	log.Printf("using config file at path %s \n", file)
