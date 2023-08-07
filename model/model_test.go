@@ -9,19 +9,19 @@ import (
 
 func TestDataSave(t *testing.T) {
 	data := &Data{
-		Jira:         "Dakota",
+		Jira:         "Project",
 		ReportFormat: "junit",
 		SuiteResult: SuiteResult{
 			TestType: "unit",
 			Service:  "abc",
 			ScenarioResults: []ScenarioResult{
 				{
-					Name:      "test-scenario-1 (dakota-123)",
+					Name:      "test-scenario-1 (project-123)",
 					Status:    "passed",
 					TimeTaken: 3.3,
 				},
 				{
-					Name:      "(dakota-124)test-scenario-2(dakota-123)",
+					Name:      "(project-124)test-scenario-2(project-123)",
 					Status:    "failed",
 					TimeTaken: 1.3,
 				},
@@ -40,30 +40,30 @@ func TestGetFeaturesFromScenarioResult(t *testing.T) {
 		featuresExtracted []Feature
 	}{
 		{
-			projectName: "dakota",
+			projectName: "project",
 			scenarioResult: ScenarioResult{
-				Features: []string{"Dakota-123"},
+				Features: []string{"Project-123"},
 			},
 			featuresExtracted: []Feature{
 				{
-					ID: "DAKOTA-123",
+					ID: "PROJECT-123",
 				},
 			},
 		}, {
-			projectName: "Dakota",
+			projectName: "Project",
 			scenarioResult: ScenarioResult{
-				Features: []string{"DAKOTA-123", "dakota-456", "DaKoTaIsGreat"},
+				Features: []string{"PROJECT-123", "project-456", "ProJecTIsGreat"},
 			},
 			featuresExtracted: []Feature{
 				{
-					ID: "DAKOTA-123",
+					ID: "PROJECT-123",
 				},
 				{
-					ID: "DAKOTA-456",
+					ID: "PROJECT-456",
 				},
 			},
 		}, {
-			projectName: "dakota",
+			projectName: "project",
 			scenarioResult: ScenarioResult{
 				Features: []string{"abc", "123"},
 			},

@@ -1,9 +1,0 @@
-include:
-  - project: dakota/backend/ci
-    ref: master
-    file: pipelines/go/service.yml
-
-variables:
-  CMD_NAME: treco
-  ECR_URI: 851255665500.dkr.ecr.ap-southeast-1.amazonaws.com/treco
-  UNITTEST_MIN_COVERAGE: 75

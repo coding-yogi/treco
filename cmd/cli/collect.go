@@ -5,10 +5,16 @@ import (
 	"io"
 	"log"
 	"os"
+	"treco/conf"
+	"treco/model"
+	"treco/server"
 	"treco/storage"
 
 	"github.com/spf13/cobra"
 )
+
+var cfg conf.Config
+var dbEntities = []interface{}{&model.SuiteResult{}, &model.ScenarioResult{}, &model.Scenario{}, &model.Feature{}}
 
 var collectCmd = &cobra.Command{
 	Use:   "collect",
@@ -42,7 +48,7 @@ var collectCmd = &cobra.Command{
 
 		// Process file
 		var rf io.Reader = reportFile
-		err = process(cfg, rf)
+		err = server.Process(cfg, rf)
 		exitOnError(err)
 
 		log.Println("results uploaded successfully")
@@ -52,23 +58,23 @@ var collectCmd = &cobra.Command{
 func init() {
 	flags := collectCmd.Flags()
 
-	flags.StringVarP(&cfg.Build, "build", "b", os.Getenv(BuildID), "CI Build name or number to uniquely identify the Build")
-	flags.StringVarP(&cfg.Environment, "environment", "e", os.Getenv(Environment), "Environment on which the Build is executed")
-	flags.StringVarP(&cfg.Jira, "jira", "j", os.Getenv(Jira), "Jira project name")
-	flags.StringVarP(&cfg.ReportFile, "report", "r", os.Getenv(ReportFile), "input file containing test reports")
-	flags.StringVarP(&cfg.ReportFormat, "format", "f", os.Getenv(ReportFormat), "report of report file")
-	flags.StringVarP(&cfg.Service, "service", "s", os.Getenv(Service), "Service name")
-	flags.StringVarP(&cfg.TestType, "type", "t", os.Getenv(TestType), "type of tests executed. 'unit', 'contract', 'integration' or 'e2e")
-	flags.StringVarP(&cfg.Coverage, "coverage", "c", os.Getenv(Coverage), "statement level code coverage")
+	flags.StringVarP(&cfg.Build, "build", "b", os.Getenv(server.BuildID), "CI Build name or number to uniquely identify the Build")
+	flags.StringVarP(&cfg.Environment, "environment", "e", os.Getenv(server.Environment), "Environment on which the Build is executed")
+	flags.StringVarP(&cfg.Jira, "jira", "j", os.Getenv(server.Jira), "Jira project name")
+	flags.StringVarP(&cfg.ReportFile, "report", "r", os.Getenv(server.ReportFile), "input file containing test reports")
+	flags.StringVarP(&cfg.ReportFormat, "format", "f", os.Getenv(server.ReportFormat), "report of report file")
+	flags.StringVarP(&cfg.Service, "service", "s", os.Getenv(server.Service), "Service name")
+	flags.StringVarP(&cfg.TestType, "type", "t", os.Getenv(server.TestType), "type of tests executed. 'unit', 'contract', 'integration' or 'e2e")
+	flags.StringVarP(&cfg.Coverage, "coverage", "c", os.Getenv(server.Coverage), "statement level code coverage")
 }
 
 var (
 	errMissingArguments = fmt.Errorf("\nmissing arguments, please run `treco --help` for more info\n"+
 		"\nyou can also supply arguments via following ENVIRONMENT variables\n"+
-		"%s, %s, %s, %s, %s, %s, %s, %s ", BuildID, Environment, Jira, ReportFile, ReportFormat, Service, TestType, Coverage)
+		"%v ", server.RequiredParams)
 )
 
-func validateFlags(cfg config) error {
+func validateFlags(cfg conf.Config) error {
 	//check for empty flags
 	log.Println("validating parameters")
 	if cfg.ReportFile == "" || cfg.ReportFormat == "" || cfg.Service == "" || cfg.TestType == "" || cfg.Build == "" ||
@@ -76,5 +82,12 @@ func validateFlags(cfg config) error {
 		return errMissingArguments
 	}
 
-	return validateParams(cfg.TestType, cfg.ReportFormat, cfg.Coverage)
+	return server.ValidateParams(cfg.TestType, cfg.ReportFormat, cfg.Coverage)
+}
+
+// exits ith fatal error
+func exitOnError(e error) {
+	if e != nil {
+		log.Fatal(e)
+	}
 }
