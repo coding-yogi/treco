@@ -94,14 +94,14 @@ __Step 2: Start Grafana__
 `docker run -d -p 3000:3000 --network test_network --name=grafana --volume grafana-storage:/var/lib/grafana grafana/grafana-enterprise`
 
 __Step 3: Configure Postgres DataStore in Grafana__  
-With name `Postgres` and import all the dashboards from [Dashboards](./dashboards) folder.  
+With name `Postgres` and import all the dashboards from [dashboards](./dashboards) folder.  
 *Note:* Use the PG container's IP address to configure is Grafana as they would communicate ove the network.
 
 __Step 4: Start the service__  
 `./treco serve -c <path_to_env>`  
 
 __Step 5: Send curl command to service__  
-Send your 1st report to service by running curl command as shown [Here](#sending-report-to-the-service)
+Send your 1st report to service by running curl command as shown [here](#sending-report-to-the-service)
 
 Now just refresh your dashboards and Voila! you can start visualising your data !!
 
