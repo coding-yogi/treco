@@ -120,7 +120,7 @@ If your Junit report can have `Features` attribute embedded intp `<test>` tag, T
 ![traceability](./dashboards/images/traceability.png)
 
 ### End to End Tests
-Failure rate is high in these tests and capturing test falkiness is an important metric. This dashboard helps to capture that
+Failure rate is high in these tests and capturing test flakiness is an important metric. This dashboard helps to capture that
 
 ![end to end tests](./dashboards/images/e2e_tests.png)
 
