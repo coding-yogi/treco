@@ -1,15 +1,15 @@
 # TRECO
 
-Treco a.k.a Test Report Collector is a simple tool which parses `junit` formatted test reports and stores it in a database.  
+Treco a.k.a Test Report Collector is a simple tool which parses _junit_ formatted test reports and stores it in a database.  
 
-As `junit ` report is a widely accepted format, reports from most of the testing frameworks can be pushed to treco.
+As _junit_ report is a widely accepted format, reports from most of the testing frameworks can be pushed to treco.
 
 ## Running Treco
 Treco can run as a service or as a command line tool.  
 It is preferred to run it as a service so the report file can be sent to service over an http call
 
 ### Prerequisite
-Treco is backed by `Postgres` DB, hence you will need an instance of PG running before Treco can be used.
+Treco is backed by Postgres DB, hence you will need an instance of PG running before Treco can be used.
 
 ### Running as a service
 Treco service needs DB credentials to start. DB credentials are read from the `env` variables.   This gives flexbility to supply creds via secrets in K8s or from the Vault by mounting vault secrets onto the pod.
@@ -25,7 +25,7 @@ Environment variables can also be passed through a `.env` file. To read env from
 
 ```
 ./treco serve --help                                    
-config file Runs as a web server
+Runs as a web server
 
 Usage:
   treco serve [flags]
