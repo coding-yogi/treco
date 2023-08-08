@@ -1,7 +1,6 @@
 package cli
 
 import (
-	"fmt"
 	"treco/server"
 
 	"github.com/spf13/cobra"
@@ -24,6 +23,5 @@ func newServeCommand() *cobra.Command {
 	flags.IntVarP(&port, "port", "p", 8080, "port for server to run")
 	flags.StringVarP(&cfgFile, "config", "c", "", "config file")
 
-	fmt.Printf("config file %s", cfgFile)
 	return &serveCmd
 }
