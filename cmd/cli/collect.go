@@ -6,56 +6,54 @@ import (
 	"log"
 	"os"
 	"treco/conf"
-	"treco/model"
 	"treco/server"
 	"treco/storage"
 
 	"github.com/spf13/cobra"
 )
 
-var cfg conf.Config
-var dbEntities = []interface{}{&model.SuiteResult{}, &model.ScenarioResult{}, &model.Scenario{}, &model.Feature{}}
+func newCollectCommand() *cobra.Command {
+	var cfg conf.Config
 
-var collectCmd = &cobra.Command{
-	Use:   "collect",
-	Short: "Runs as a command line tool",
-	Run: func(cmd *cobra.Command, args []string) {
-		var err error
+	collectCmd := &cobra.Command{
+		Use:   "collect",
+		Short: "Runs as a command line tool",
+		Run: func(cmd *cobra.Command, args []string) {
+			var err error
 
-		// Connect to storage
-		err = storage.New()
-		exitOnError(err)
+			// Connect to storage
+			err = storage.New()
+			exitOnError(err)
 
-		handler := storage.Handler()
-		defer func() {
-			_ = (*handler).Close()
-		}()
+			handler := storage.Handler()
+			defer func() {
+				_ = (*handler).Close()
+			}()
 
-		//DB setup
-		err = (*handler).Setup(dbEntities...)
-		exitOnError(err)
+			//DB setup
+			err = (*handler).Setup(server.DBEntities...)
+			exitOnError(err)
 
-		//validate flags
-		err = validateFlags(cfg)
-		exitOnError(err)
+			//validate flags
+			err = validateFlags(cfg)
+			exitOnError(err)
 
-		//check for report file
-		reportFile, err := os.OpenFile(cfg.ReportFile, os.O_RDONLY, 0600)
-		exitOnError(err)
-		defer func() {
-			_ = reportFile.Close()
-		}()
+			//check for report file
+			reportFile, err := os.OpenFile(cfg.ReportFile, os.O_RDONLY, 0600)
+			exitOnError(err)
+			defer func() {
+				_ = reportFile.Close()
+			}()
 
-		// Process file
-		var rf io.Reader = reportFile
-		err = server.Process(cfg, rf)
-		exitOnError(err)
+			// Process file
+			var rf io.Reader = reportFile
+			err = server.Process(cfg, rf)
+			exitOnError(err)
 
-		log.Println("results uploaded successfully")
-	},
-}
+			log.Println("results uploaded successfully")
+		},
+	}
 
-func init() {
 	flags := collectCmd.Flags()
 
 	flags.StringVarP(&cfg.Build, "build", "b", os.Getenv(server.BuildID), "CI Build name or number to uniquely identify the Build")
@@ -66,6 +64,8 @@ func init() {
 	flags.StringVarP(&cfg.Service, "service", "s", os.Getenv(server.Service), "Service name")
 	flags.StringVarP(&cfg.TestType, "type", "t", os.Getenv(server.TestType), "type of tests executed. 'unit', 'contract', 'integration' or 'e2e")
 	flags.StringVarP(&cfg.Coverage, "coverage", "c", os.Getenv(server.Coverage), "statement level code coverage")
+
+	return collectCmd
 }
 
 var (
@@ -74,6 +74,7 @@ var (
 		"%v ", server.RequiredParams)
 )
 
+// validate flags sent to collect command
 func validateFlags(cfg conf.Config) error {
 	//check for empty flags
 	log.Println("validating parameters")

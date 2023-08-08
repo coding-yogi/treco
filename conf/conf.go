@@ -5,6 +5,7 @@ package conf
 
 import (
 	"log"
+	"os"
 
 	"github.com/spf13/viper"
 )
@@ -37,7 +38,11 @@ func LoadEnvFromFile(file string) error {
 
 // Get ...
 func Get(key string) string {
-	return viper.GetString(key)
+	if viper.GetString(key) != "" {
+		return viper.GetString(key)
+	}
+
+	return os.Getenv(key)
 }
 
 // Set ...
